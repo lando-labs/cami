@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "cami": {
+      "command": "/Users/lando/Development/cami/cami-mcp",
+      "env": {
+        "CAMI_VC_AGENTS_DIR": "/Users/lando/Development/cami/vc-agents"
+      }
+    }
+  }
+}
