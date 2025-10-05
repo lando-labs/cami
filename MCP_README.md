@@ -21,7 +21,28 @@ cd /Users/lando/Development/cami
 go build -o cami-mcp cmd/cami-mcp/main.go
 ```
 
-### 2. Configure Claude Desktop
+### 2. Configure for Your Client
+
+#### Option A: Claude Code (VSCode Extension)
+
+Add to your Claude Code MCP settings (`~/.config/claude-code/mcp_settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "cami": {
+      "command": "/Users/lando/Development/cami/cami-mcp",
+      "env": {
+        "CAMI_VC_AGENTS_DIR": "/Users/lando/Development/cami/vc-agents"
+      }
+    }
+  }
+}
+```
+
+**Note**: On Windows, the config is at `%APPDATA%\claude-code\mcp_settings.json`
+
+#### Option B: Claude Desktop (macOS App)
 
 Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
@@ -38,11 +59,21 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
 }
 ```
 
-### 3. Restart Claude Desktop
+### 3. Restart Your Client
 
-Restart Claude Desktop to load the MCP server.
+**Claude Code**: Restart VSCode or reload the window (Cmd+Shift+P → "Developer: Reload Window")
 
-### 4. Use in Conversations
+**Claude Desktop**: Quit and restart the Claude Desktop application
+
+### 4. Verify Installation
+
+After restarting, verify the CAMI MCP server is loaded:
+
+**Claude Code**: The CAMI tools should appear in the tool list when Claude suggests actions
+
+**Claude Desktop**: Check logs at `~/Library/Logs/Claude/mcp*.log` for startup messages
+
+### 5. Use in Conversations
 
 ```
 You: "What agents are available in CAMI?"
@@ -50,6 +81,12 @@ Claude: [calls list_agents tool]
 
 You: "Deploy the architect agent to /Users/username/my-project"
 Claude: [calls deploy_agents tool]
+
+You: "Add my-app as a deployment location at /Users/username/projects/my-app"
+Claude: [calls add_location tool]
+
+You: "Scan the agents in /Users/username/my-project"
+Claude: [calls scan_deployed_agents tool]
 ```
 
 ## Available Tools
@@ -280,9 +317,17 @@ Comprehensive reference documentation:
 
 ### Server doesn't appear in Claude
 
-1. Verify Claude Desktop config is valid JSON
+**Claude Code**:
+1. Verify `~/.config/claude-code/mcp_settings.json` is valid JSON
+2. Check binary path is absolute (not relative)
+3. Reload VSCode window (Cmd+Shift+P → "Developer: Reload Window")
+4. Check VSCode output panel (select "Claude Code" from dropdown)
+5. Verify the binary has execute permissions: `chmod +x /path/to/cami-mcp`
+
+**Claude Desktop**:
+1. Verify config is valid JSON: `~/Library/Application Support/Claude/claude_desktop_config.json`
 2. Check binary path is absolute
-3. Restart Claude Desktop
+3. Quit and restart Claude Desktop (not just close window)
 4. Check Claude logs: `~/Library/Logs/Claude/mcp*.log`
 
 ### "vc-agents directory not found"
@@ -306,6 +351,11 @@ Set `CAMI_VC_AGENTS_DIR` environment variable in Claude config:
 
 ### Viewing Logs
 
+**Claude Code**:
+- View in VSCode: Output panel → Select "Claude Code" from dropdown
+- MCP server stderr is shown in the output
+
+**Claude Desktop**:
 ```bash
 # Server logs (stderr)
 tail -f ~/Library/Logs/Claude/mcp-cami.log
