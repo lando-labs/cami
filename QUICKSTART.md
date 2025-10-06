@@ -46,6 +46,51 @@ ls -la /path/to/your/project/.claude/agents/
 
 You should see your deployed agent files!
 
+## Optional: MCP Server Setup
+
+Enable CAMI in Claude Code for seamless agent management from any project.
+
+### Build MCP Server
+
+```bash
+go build -o cami-mcp cmd/cami-mcp/main.go
+```
+
+### Configure Claude Code
+
+Add to `~/.config/claude-code/mcp_settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "cami": {
+      "command": "/Users/lando/Development/cami/cami-mcp",
+      "env": {
+        "CAMI_VC_AGENTS_DIR": "/Users/lando/Development/cami/vc-agents"
+      }
+    }
+  }
+}
+```
+
+**Note**: Use absolute paths! Replace `/Users/lando/Development/cami` with your actual CAMI location.
+
+### Restart Claude Code
+
+Reload VSCode window: `Cmd+Shift+P` → "Developer: Reload Window"
+
+### Use MCP Tools
+
+Now you can manage agents directly in Claude Code conversations:
+
+```
+"What agents are available in CAMI?"
+"Deploy the architect agent to /Users/username/my-project"
+"Add my-project as a CAMI location at /Users/username/projects/my-app"
+```
+
+See [MCP_README.md](MCP_README.md) for complete MCP documentation.
+
 ## Common Commands
 
 ```bash
