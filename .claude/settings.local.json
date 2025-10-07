@@ -49,7 +49,14 @@
       "mcp__cami__deploy_agents",
       "Bash(git init:*)",
       "Bash(git branch:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: CAMI v0.2.0 - Claude Agent Management Interface\n\nCAMI is a comprehensive agent deployment and management system for Claude Code,\nfeaturing both CLI/TUI and MCP server interfaces.\n\nCore Features:\n- Agent Management: 23 version-controlled specialized agents\n- CLI Commands: deploy, list, scan, update-docs, location management\n- MCP Server: 7 tools for seamless Claude Code integration\n- TUI Interface: Interactive Bubble Tea-based terminal UI\n- Documentation: Comprehensive guides and reference materials\n\nComponents:\n- cmd/cami/: CLI/TUI application entry point\n- cmd/cami-mcp/: MCP server implementation\n- internal/: Core packages (agent, cli, config, deploy, discovery, docs, tui)\n- vc-agents/: 23 specialized agents (architect, backend, frontend, devops, etc.)\n- reference/: Detailed documentation and development guides\n\nAgents Include:\n- Development: architect, backend, frontend, mobile-native, game-dev\n- Operations: devops, deploy, terminal-specialist, embedded-systems\n- Specialized: ai-ml-specialist, blockchain-specialist, data-engineer\n- Quality: qa, security-specialist, performance-optimizer, accessibility-expert\n- Integration: api-integrator, mcp-specialist, gcp-firebase\n- Design: designer, ux, docs-writer, agent-architect\n\nMCP Tools:\n- list_agents, list_locations, scan_deployed_agents\n- deploy_agents, update_claude_md\n- add_location, remove_location\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(gh repo create:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "mcp__cami__add_location",
+      "mcp__cami__update_claude_md",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

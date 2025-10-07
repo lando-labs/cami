@@ -54,7 +54,7 @@ Configure in Claude Desktop (`~/Library/Application Support/Claude/claude_deskto
 }
 ```
 
-See [MCP_README.md](MCP_README.md) for detailed MCP server documentation.
+See [reference/MCP_README.md](reference/MCP_README.md) for detailed MCP server documentation or [QUICKSTART.md](QUICKSTART.md) for a quick setup guide.
 
 ## Usage
 
@@ -88,18 +88,30 @@ Use command-line interface for programmatic operations:
 ./cami scan --location ~/my-project
 ```
 
-See [CLI-COMMANDS.md](CLI-COMMANDS.md) for complete CLI reference.
+See [reference/CLI-COMMANDS.md](reference/CLI-COMMANDS.md) for complete CLI reference.
 
 ### 3. MCP Server (Claude Integration)
 
-Once configured, Claude Code/Desktop can use CAMI tools directly:
+Once configured, Claude Code/Desktop can use CAMI's 7 MCP tools directly:
 
+**Agent Management:**
+- `deploy_agents` - Deploy agents to project directories
+- `update_claude_md` - Update CLAUDE.md with agent documentation
+- `list_agents` - List all available agents with versions
+- `scan_deployed_agents` - Scan projects for deployed agents
+
+**Location Management:**
+- `add_location` - Register new deployment locations
+- `list_locations` - List configured deployment locations
+- `remove_location` - Remove deployment locations
+
+Example usage:
 ```
 You: "Deploy the architect and backend agents to my current project"
-Claude: [uses CAMI MCP tools to deploy agents]
+Claude: [uses deploy_agents tool]
 
 You: "What agents are available?"
-Claude: [lists all 23 agents from CAMI]
+Claude: [uses list_agents tool]
 ```
 
 ## Available Agents
@@ -271,14 +283,16 @@ go build -o cami-mcp cmd/cami-mcp/main.go
 ## Documentation
 
 - **[README.md](README.md)** - This file, main entry point
-- **[CLI-COMMANDS.md](CLI-COMMANDS.md)** - Complete CLI reference and examples
-- **[MCP_README.md](MCP_README.md)** - MCP server setup and integration guide
+- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute getting started guide
+- **[reference/CLI-COMMANDS.md](reference/CLI-COMMANDS.md)** - Complete CLI reference and examples
+- **[reference/MCP_README.md](reference/MCP_README.md)** - MCP server setup and integration guide
 - **[reference/](reference/)** - Detailed technical documentation
   - [mcp-architecture.md](reference/mcp-architecture.md) - MCP server architecture
   - [tool-catalog.md](reference/tool-catalog.md) - MCP tool reference
   - [development-guide.md](reference/development-guide.md) - Contributing guide
   - [cami-development-workflow.md](reference/cami-development-workflow.md) - Development workflow
   - [ai-generation-standard.md](reference/ai-generation-standard.md) - Agent generation standards
+  - [MCP_INSTALLATION.md](reference/MCP_INSTALLATION.md) - Detailed MCP installation guide
 
 ## Version
 
@@ -331,7 +345,7 @@ cami/
 **MCP Server:**
 - Entry: `cmd/cami-mcp/main.go`
 - Protocol: Model Context Protocol over stdio
-- Tools: deploy_agents, list_agents, scan_deployed_agents, update_claude_md
+- Tools: 7 tools (deploy_agents, update_claude_md, list_agents, scan_deployed_agents, add_location, list_locations, remove_location)
 - Integration: Direct usage of internal packages
 
 **Shared Core:**
@@ -367,11 +381,13 @@ See [reference/development-guide.md](reference/development-guide.md) for:
 ## Roadmap
 
 ### v0.2.0 (Current)
-- ✅ Full CLI interface
-- ✅ MCP server integration
-- ✅ Agent discovery and updates
-- ✅ Smart CLAUDE.md documentation
-- ✅ JSON output for programmatic use
+- ✅ Full CLI interface with location management
+- ✅ MCP server with 7 tools for Claude Code/Desktop integration
+- ✅ Agent discovery and updates (TUI press `i`)
+- ✅ Smart CLAUDE.md documentation updates
+- ✅ JSON output format for programmatic use
+- ✅ 23 specialized agents at v1.1.0
+- ✅ Reference folder documentation pattern
 
 ### v0.3.0 (Planned)
 - Agent orchestration guidance
