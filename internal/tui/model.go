@@ -34,6 +34,7 @@ type Model struct {
 	width           int
 	height          int
 	cursor          int
+	viewportOffset  int // For scrolling the agent list
 	message         string
 	err             error
 
@@ -214,10 +215,12 @@ func (m Model) updateAgentSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Up):
 		if m.cursor > 0 {
 			m.cursor--
+			m.adjustViewport()
 		}
 	case key.Matches(msg, keys.Down):
 		if m.cursor < len(m.agents)-1 {
 			m.cursor++
+			m.adjustViewport()
 		}
 	case key.Matches(msg, keys.Select):
 		m.selectedAgents[m.cursor] = !m.selectedAgents[m.cursor]
@@ -241,6 +244,33 @@ func (m Model) updateAgentSelection(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.scanLocations()
 	}
 	return m, nil
+}
+
+// adjustViewport ensures the cursor is visible within the viewport
+func (m *Model) adjustViewport() {
+	// Calculate available height for agent list
+	// Title (3 lines) + "Select agents" (2 lines) + message (2 lines if present) + help (2 lines) = ~9 lines overhead
+	overhead := 9
+	if m.message != "" {
+		overhead += 2
+	}
+
+	// Each agent takes 2 lines (main line + description when selected)
+	linesPerAgent := 2
+
+	maxVisibleAgents := (m.height - overhead) / linesPerAgent
+	if maxVisibleAgents < 1 {
+		maxVisibleAgents = 1
+	}
+
+	// Adjust viewport to keep cursor visible
+	if m.cursor < m.viewportOffset {
+		// Cursor moved above viewport
+		m.viewportOffset = m.cursor
+	} else if m.cursor >= m.viewportOffset+maxVisibleAgents {
+		// Cursor moved below viewport
+		m.viewportOffset = m.cursor - maxVisibleAgents + 1
+	}
 }
 
 func (m Model) updateLocationManagement(msg tea.KeyMsg) (tea.Model, tea.Cmd) {

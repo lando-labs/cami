@@ -18,7 +18,32 @@ func (m Model) viewAgentSelection() string {
 	// Agent list
 	b.WriteString("Select agents to deploy:\n\n")
 
-	for i, ag := range m.agents {
+	// Calculate viewport parameters
+	overhead := 9
+	if m.message != "" {
+		overhead += 2
+	}
+	linesPerAgent := 2
+	maxVisibleAgents := (m.height - overhead) / linesPerAgent
+	if maxVisibleAgents < 1 {
+		maxVisibleAgents = 1
+	}
+
+	// Calculate visible range
+	startIdx := m.viewportOffset
+	endIdx := m.viewportOffset + maxVisibleAgents
+	if endIdx > len(m.agents) {
+		endIdx = len(m.agents)
+	}
+
+	// Show scroll indicator at top if not at beginning
+	if startIdx > 0 {
+		b.WriteString(versionStyle.Render(fmt.Sprintf("  ↑ %d more above...\n", startIdx)))
+	}
+
+	// Render visible agents
+	for i := startIdx; i < endIdx; i++ {
+		ag := m.agents[i]
 		cursor := " "
 		if m.cursor == i {
 			cursor = ">"
@@ -49,6 +74,11 @@ func (m Model) viewAgentSelection() string {
 			b.WriteString(versionStyle.Render(desc))
 			b.WriteString("\n")
 		}
+	}
+
+	// Show scroll indicator at bottom if more items below
+	if endIdx < len(m.agents) {
+		b.WriteString(versionStyle.Render(fmt.Sprintf("  ↓ %d more below...\n", len(m.agents)-endIdx)))
 	}
 
 	// Message
