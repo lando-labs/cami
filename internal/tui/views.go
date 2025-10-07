@@ -124,7 +124,34 @@ func (m Model) viewLocationManagement() string {
 			b.WriteString("No deployment locations configured.\n\n")
 			b.WriteString("Press 'a' to add a location.\n")
 		} else {
-			for i, loc := range m.config.DeployLocations {
+			// Calculate viewport parameters for locations
+			overhead := 5
+			if m.message != "" {
+				overhead += 2
+			}
+			linesPerLocation := 1
+			// +1 for "Add new location" option
+			totalItems := len(m.config.DeployLocations) + 1
+			maxVisibleLocations := (m.height - overhead) / linesPerLocation
+			if maxVisibleLocations < 1 {
+				maxVisibleLocations = 1
+			}
+
+			// Calculate visible range
+			startIdx := m.locationViewportOffset
+			endIdx := m.locationViewportOffset + maxVisibleLocations
+			if endIdx > totalItems {
+				endIdx = totalItems
+			}
+
+			// Show scroll indicator at top if not at beginning
+			if startIdx > 0 {
+				b.WriteString(versionStyle.Render(fmt.Sprintf("  ↑ %d more above...\n", startIdx)))
+			}
+
+			// Render visible locations
+			for i := startIdx; i < endIdx && i < len(m.config.DeployLocations); i++ {
+				loc := m.config.DeployLocations[i]
 				cursor := " "
 				if m.locationCursor == i {
 					cursor = ">"
@@ -139,16 +166,24 @@ func (m Model) viewLocationManagement() string {
 				b.WriteString(fmt.Sprintf("%s %s - %s\n", cursor, name, path))
 			}
 
-			// Add "New Location" option
-			cursor := " "
-			if m.locationCursor == len(m.config.DeployLocations) {
-				cursor = ">"
+			// Add "New Location" option if visible in viewport
+			addLocationIdx := len(m.config.DeployLocations)
+			if addLocationIdx >= startIdx && addLocationIdx < endIdx {
+				cursor := " "
+				if m.locationCursor == addLocationIdx {
+					cursor = ">"
+				}
+				addText := "+ Add new location"
+				if m.locationCursor == addLocationIdx {
+					addText = selectedStyle.Render(addText)
+				}
+				b.WriteString(fmt.Sprintf("\n%s %s\n", cursor, addText))
 			}
-			addText := "+ Add new location"
-			if m.locationCursor == len(m.config.DeployLocations) {
-				addText = selectedStyle.Render(addText)
+
+			// Show scroll indicator at bottom if more items below
+			if endIdx < totalItems {
+				b.WriteString(versionStyle.Render(fmt.Sprintf("  ↓ %d more below...\n", totalItems-endIdx)))
 			}
-			b.WriteString(fmt.Sprintf("\n%s %s\n", cursor, addText))
 		}
 
 		if m.message != "" {
@@ -322,9 +357,35 @@ func (m Model) viewDiscovery() string {
 			warningStyle.Render(fmt.Sprintf("%d", updateAvailable)),
 			versionStyle.Render(fmt.Sprintf("%d", notDeployed))))
 
-		// Agent list
+		// Agent list with scrolling
 		b.WriteString("Agents:\n")
-		for i, agentStatus := range locStatus.AgentStatuses {
+
+		// Calculate viewport parameters for discovery
+		overhead := 12
+		if m.message != "" {
+			overhead += 2
+		}
+		linesPerAgent := 1
+		maxVisibleAgents := (m.height - overhead) / linesPerAgent
+		if maxVisibleAgents < 1 {
+			maxVisibleAgents = 1
+		}
+
+		// Calculate visible range
+		startIdx := m.discoveryViewportOffset
+		endIdx := m.discoveryViewportOffset + maxVisibleAgents
+		if endIdx > len(locStatus.AgentStatuses) {
+			endIdx = len(locStatus.AgentStatuses)
+		}
+
+		// Show scroll indicator at top if not at beginning
+		if startIdx > 0 {
+			b.WriteString(versionStyle.Render(fmt.Sprintf("  ↑ %d more above...\n", startIdx)))
+		}
+
+		// Render visible agents
+		for i := startIdx; i < endIdx; i++ {
+			agentStatus := locStatus.AgentStatuses[i]
 			cursor := " "
 			if i == m.discoveryAgentIdx {
 				cursor = ">"
@@ -360,6 +421,11 @@ func (m Model) viewDiscovery() string {
 			line := fmt.Sprintf("%s %s %-20s %s", cursor, statusStyle.Render(symbol), name, versionStyle.Render(versionInfo))
 			b.WriteString(line)
 			b.WriteString("\n")
+		}
+
+		// Show scroll indicator at bottom if more items below
+		if endIdx < len(locStatus.AgentStatuses) {
+			b.WriteString(versionStyle.Render(fmt.Sprintf("  ↓ %d more below...\n", len(locStatus.AgentStatuses)-endIdx)))
 		}
 	}
 

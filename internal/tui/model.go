@@ -39,17 +39,19 @@ type Model struct {
 	err             error
 
 	// Location management
-	locationCursor  int
-	addingLocation  bool
-	newLocationName string
-	newLocationPath string
-	inputField      int // 0 = name, 1 = path
+	locationCursor       int
+	locationViewportOffset int // For scrolling the location list
+	addingLocation       bool
+	newLocationName      string
+	newLocationPath      string
+	inputField           int // 0 = name, 1 = path
 
 	// Discovery
-	discoveryResult    *discovery.DiscoveryResult
-	discoveryLocationIdx int
-	discoveryAgentIdx   int
-	discoveryLoading    bool
+	discoveryResult       *discovery.DiscoveryResult
+	discoveryLocationIdx  int
+	discoveryAgentIdx     int
+	discoveryViewportOffset int // For scrolling the discovery agent list
+	discoveryLoading      bool
 }
 
 // scanCompleteMsg is sent when discovery scan completes
@@ -273,6 +275,62 @@ func (m *Model) adjustViewport() {
 	}
 }
 
+// adjustLocationViewport ensures the location cursor is visible
+func (m *Model) adjustLocationViewport() {
+	// Title (3 lines) + help (2 lines) = ~5 lines overhead
+	overhead := 5
+	if m.message != "" {
+		overhead += 2
+	}
+
+	// Each location takes 1 line
+	linesPerLocation := 1
+
+	maxVisibleLocations := (m.height - overhead) / linesPerLocation
+	if maxVisibleLocations < 1 {
+		maxVisibleLocations = 1
+	}
+
+	// Adjust viewport to keep cursor visible
+	if m.locationCursor < m.locationViewportOffset {
+		m.locationViewportOffset = m.locationCursor
+	} else if m.locationCursor >= m.locationViewportOffset+maxVisibleLocations {
+		m.locationViewportOffset = m.locationCursor - maxVisibleLocations + 1
+	}
+}
+
+// adjustDiscoveryViewport ensures the discovery agent cursor is visible
+func (m *Model) adjustDiscoveryViewport() {
+	if m.discoveryResult == nil || len(m.discoveryResult.LocationStatuses) == 0 {
+		return
+	}
+
+	if m.discoveryLocationIdx >= len(m.discoveryResult.LocationStatuses) {
+		return
+	}
+
+	// Title (3 lines) + location tabs (2 lines) + summary (2 lines) + "Agents:" (1 line) + message (2 lines if present) + help (2 lines) = ~12 lines overhead
+	overhead := 12
+	if m.message != "" {
+		overhead += 2
+	}
+
+	// Each agent takes 1 line
+	linesPerAgent := 1
+
+	maxVisibleAgents := (m.height - overhead) / linesPerAgent
+	if maxVisibleAgents < 1 {
+		maxVisibleAgents = 1
+	}
+
+	// Adjust viewport to keep cursor visible
+	if m.discoveryAgentIdx < m.discoveryViewportOffset {
+		m.discoveryViewportOffset = m.discoveryAgentIdx
+	} else if m.discoveryAgentIdx >= m.discoveryViewportOffset+maxVisibleAgents {
+		m.discoveryViewportOffset = m.discoveryAgentIdx - maxVisibleAgents + 1
+	}
+}
+
 func (m Model) updateLocationManagement(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Handle text input mode first - when adding a location
 	if m.addingLocation {
@@ -325,10 +383,12 @@ func (m Model) updateLocationManagement(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Up):
 		if m.locationCursor > 0 {
 			m.locationCursor--
+			m.adjustLocationViewport()
 		}
 	case key.Matches(msg, keys.Down):
 		if m.locationCursor < len(m.config.DeployLocations) {
 			m.locationCursor++
+			m.adjustLocationViewport()
 		}
 	case msg.String() == "a":
 		// Start adding a new location
@@ -344,6 +404,7 @@ func (m Model) updateLocationManagement(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if m.locationCursor > 0 {
 				m.locationCursor--
 			}
+			m.adjustLocationViewport()
 		}
 	}
 	return m, nil
@@ -422,18 +483,22 @@ func (m Model) updateDiscovery(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Up), msg.String() == "k":
 		if m.discoveryAgentIdx > 0 {
 			m.discoveryAgentIdx--
+			m.adjustDiscoveryViewport()
 		}
 	case key.Matches(msg, keys.Down), msg.String() == "j":
 		if len(m.discoveryResult.AvailableAgents) > 0 && m.discoveryAgentIdx < len(m.discoveryResult.AvailableAgents)-1 {
 			m.discoveryAgentIdx++
+			m.adjustDiscoveryViewport()
 		}
 	case msg.String() == "h", msg.String() == "left":
 		if m.discoveryLocationIdx > 0 {
 			m.discoveryLocationIdx--
+			m.discoveryViewportOffset = 0 // Reset viewport when changing locations
 		}
 	case msg.String() == "l", msg.String() == "right":
 		if len(m.discoveryResult.LocationStatuses) > 0 && m.discoveryLocationIdx < len(m.discoveryResult.LocationStatuses)-1 {
 			m.discoveryLocationIdx++
+			m.discoveryViewportOffset = 0 // Reset viewport when changing locations
 		}
 	case msg.String() == "r":
 		// Refresh/rescan
