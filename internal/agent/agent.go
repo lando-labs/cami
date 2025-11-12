@@ -15,6 +15,7 @@ type Agent struct {
 	Name        string `yaml:"name"`
 	Version     string `yaml:"version"`
 	Description string `yaml:"description"`
+	Category    string `yaml:"-"` // Folder name (e.g., "core", "specialized")
 	FilePath    string `yaml:"-"`
 	Content     string `yaml:"-"`
 }
@@ -26,27 +27,49 @@ type Metadata struct {
 	Description string `yaml:"description"`
 }
 
-// LoadAgents reads all agents from the vc-agents directory
+// LoadAgents reads all agents from the vc-agents directory (supports nested folders)
 func LoadAgents(vcAgentsDir string) ([]*Agent, error) {
-	files, err := os.ReadDir(vcAgentsDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read vc-agents directory: %w", err)
-	}
-
 	var agents []*Agent
-	for _, file := range files {
-		if file.IsDir() || !strings.HasSuffix(file.Name(), ".md") {
-			continue
+
+	// Walk the directory tree to support categorized agents in subdirectories
+	err := filepath.Walk(vcAgentsDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
 
-		agentPath := filepath.Join(vcAgentsDir, file.Name())
-		agent, err := LoadAgent(agentPath)
+		// Skip if not a .md file
+		if info.IsDir() || !strings.HasSuffix(info.Name(), ".md") {
+			return nil
+		}
+
+		// Load the agent
+		agent, err := LoadAgent(path)
 		if err != nil {
 			// Log error but continue loading other agents
-			fmt.Fprintf(os.Stderr, "Warning: failed to load agent %s: %v\n", file.Name(), err)
-			continue
+			fmt.Fprintf(os.Stderr, "Warning: failed to load agent %s: %v\n", info.Name(), err)
+			return nil
 		}
+
+		// Extract category from the folder structure
+		// If agent is in vcAgentsDir/category/agent.md, category is extracted
+		// If agent is in vcAgentsDir/agent.md, category is empty (uncategorized)
+		relPath, err := filepath.Rel(vcAgentsDir, filepath.Dir(path))
+		if err != nil {
+			return err
+		}
+
+		if relPath != "." {
+			// Extract the first directory level as the category
+			parts := strings.Split(relPath, string(filepath.Separator))
+			agent.Category = parts[0]
+		}
+
 		agents = append(agents, agent)
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk vc-agents directory: %w", err)
 	}
 
 	return agents, nil

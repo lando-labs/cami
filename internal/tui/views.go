@@ -23,62 +23,119 @@ func (m Model) viewAgentSelection() string {
 	if m.message != "" {
 		overhead += 2
 	}
-	linesPerAgent := 2
-	maxVisibleAgents := (m.height - overhead) / linesPerAgent
-	if maxVisibleAgents < 1 {
-		maxVisibleAgents = 1
+
+	// Group agents by category for display
+	type displayItem struct {
+		isCategory  bool
+		categoryName string
+		agentIdx    int
 	}
 
-	// Calculate visible range
-	startIdx := m.viewportOffset
-	endIdx := m.viewportOffset + maxVisibleAgents
-	if endIdx > len(m.agents) {
-		endIdx = len(m.agents)
+	var displayItems []displayItem
+	categoryOrder := []string{"core", "specialized", "infrastructure", "integration", "design", "meta", "uncategorized"}
+
+	for _, category := range categoryOrder {
+		var categoryAgents []int
+		for i, ag := range m.agents {
+			agentCategory := ag.Category
+			if agentCategory == "" {
+				agentCategory = "uncategorized"
+			}
+			if agentCategory == category {
+				categoryAgents = append(categoryAgents, i)
+			}
+		}
+
+		if len(categoryAgents) > 0 {
+			// Add category header
+			displayCategory := category
+			if category != "uncategorized" {
+				displayCategory = strings.ToUpper(category[:1]) + category[1:]
+			} else {
+				displayCategory = "Uncategorized"
+			}
+			displayItems = append(displayItems, displayItem{
+				isCategory:  true,
+				categoryName: displayCategory,
+			})
+
+			// Add agents in this category
+			for _, idx := range categoryAgents {
+				displayItems = append(displayItems, displayItem{
+					isCategory: false,
+					agentIdx:   idx,
+				})
+			}
+		}
+	}
+
+	// Calculate lines needed per item (category headers are 1 line, agents can be 2 lines with description)
+	maxVisibleLines := m.height - overhead
+	if maxVisibleLines < 1 {
+		maxVisibleLines = 1
 	}
 
 	// Show scroll indicator at top if not at beginning
-	if startIdx > 0 {
-		b.WriteString(versionStyle.Render(fmt.Sprintf("  ↑ %d more above...\n", startIdx)))
+	if m.viewportOffset > 0 {
+		b.WriteString(versionStyle.Render(fmt.Sprintf("  ↑ scroll up...\n")))
 	}
 
-	// Render visible agents
-	for i := startIdx; i < endIdx; i++ {
-		ag := m.agents[i]
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
+	// Render items starting from viewportOffset
+	currentLine := 0
+	currentDisplayIdx := m.viewportOffset
 
-		checkbox := "[ ]"
-		if m.selectedAgents[i] {
-			checkbox = checkboxStyle.Render("[✓]")
-		}
+	for currentDisplayIdx < len(displayItems) && currentLine < maxVisibleLines {
+		item := displayItems[currentDisplayIdx]
 
-		name := ag.Name
-		if m.cursor == i {
-			name = selectedStyle.Render(name)
-		}
-
-		version := versionStyle.Render(fmt.Sprintf("v%s", ag.Version))
-
-		line := fmt.Sprintf("%s %s %s %s", cursor, checkbox, name, version)
-		b.WriteString(line)
-		b.WriteString("\n")
-
-		// Show description for selected item
-		if m.cursor == i {
-			desc := "  " + ag.Description
-			if len(desc) > 80 {
-				desc = desc[:77] + "..."
-			}
-			b.WriteString(versionStyle.Render(desc))
+		if item.isCategory {
+			// Render category header
+			b.WriteString(titleStyle.Render(fmt.Sprintf("── %s ──", item.categoryName)))
 			b.WriteString("\n")
+			currentLine++
+		} else {
+			// Render agent
+			i := item.agentIdx
+			ag := m.agents[i]
+			cursor := " "
+			if m.cursor == i {
+				cursor = ">"
+			}
+
+			checkbox := "[ ]"
+			if m.selectedAgents[i] {
+				checkbox = checkboxStyle.Render("[✓]")
+			}
+
+			name := ag.Name
+			if m.cursor == i {
+				name = selectedStyle.Render(name)
+			}
+
+			version := versionStyle.Render(fmt.Sprintf("v%s", ag.Version))
+
+			line := fmt.Sprintf("%s %s %s %s", cursor, checkbox, name, version)
+			b.WriteString(line)
+			b.WriteString("\n")
+			currentLine++
+
+			// Show description for selected item
+			if m.cursor == i && currentLine < maxVisibleLines {
+				desc := "  " + ag.Description
+				if len(desc) > 80 {
+					desc = desc[:77] + "..."
+				}
+				b.WriteString(versionStyle.Render(desc))
+				b.WriteString("\n")
+				currentLine++
+			}
 		}
+
+		currentDisplayIdx++
 	}
 
 	// Show scroll indicator at bottom if more items below
-	if endIdx < len(m.agents) {
-		b.WriteString(versionStyle.Render(fmt.Sprintf("  ↓ %d more below...\n", len(m.agents)-endIdx)))
+	if currentDisplayIdx < len(displayItems) {
+		b.WriteString(versionStyle.Render(fmt.Sprintf("  ↓ scroll down...\n")))
 	}
 
 	// Message

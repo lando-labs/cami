@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/lando/cami/internal/agent"
 )
@@ -14,6 +16,13 @@ const (
 	sectionMarkerStart = "<!-- CAMI-MANAGED: DEPLOYED-AGENTS -->"
 	sectionMarkerEnd   = "<!-- /CAMI-MANAGED: DEPLOYED-AGENTS -->"
 	defaultSectionName = "Deployed Agents"
+)
+
+var (
+	// Regex to match both old and new marker formats
+	// Old: <!-- CAMI-MANAGED: DEPLOYED-AGENTS -->
+	// New: <!-- CAMI-MANAGED: DEPLOYED-AGENTS | Last Updated: 2025-10-09T14:30:00-05:00 -->
+	sectionMarkerPattern = regexp.MustCompile(`<!-- CAMI-MANAGED: DEPLOYED-AGENTS(?:\s*\|\s*Last Updated:\s*[^>]+)?\s*-->`)
 )
 
 // UpdateCLAUDEmd updates the CLAUDE.md file with deployed agent information
@@ -97,8 +106,11 @@ func scanDeployedAgents(agentsDir string) ([]*agent.Agent, error) {
 func generateAgentSection(sectionName string, agents []*agent.Agent) string {
 	var sb strings.Builder
 
-	sb.WriteString(sectionMarkerStart)
-	sb.WriteString("\n")
+	// Generate timestamp in RFC3339 format (ISO 8601)
+	timestamp := time.Now().Format(time.RFC3339)
+
+	// Write start marker with timestamp
+	sb.WriteString(fmt.Sprintf("<!-- CAMI-MANAGED: DEPLOYED-AGENTS | Last Updated: %s -->\n", timestamp))
 	sb.WriteString(fmt.Sprintf("## %s\n\n", sectionName))
 	sb.WriteString("The following Claude Code agents are available in this project:\n\n")
 
@@ -128,11 +140,11 @@ func mergeContent(existing, newSection string) string {
 		return newSection
 	}
 
-	// Check if managed section already exists
-	startIdx := strings.Index(existing, sectionMarkerStart)
+	// Check if managed section already exists (handles both old and new marker formats)
+	startMatch := sectionMarkerPattern.FindStringIndex(existing)
 	endIdx := strings.Index(existing, sectionMarkerEnd)
 
-	if startIdx == -1 || endIdx == -1 {
+	if startMatch == nil || endIdx == -1 {
 		// No existing managed section, append to end
 		if !strings.HasSuffix(existing, "\n") {
 			existing += "\n"
@@ -140,6 +152,8 @@ func mergeContent(existing, newSection string) string {
 		existing += "\n"
 		return existing + newSection
 	}
+
+	startIdx := startMatch[0]
 
 	// Replace existing managed section
 	// Find the end of the end marker line
@@ -186,13 +200,14 @@ func ExtractExistingSection(projectPath string) (string, error) {
 	}
 
 	content := string(data)
-	startIdx := strings.Index(content, sectionMarkerStart)
+	startMatch := sectionMarkerPattern.FindStringIndex(content)
 	endIdx := strings.Index(content, sectionMarkerEnd)
 
-	if startIdx == -1 || endIdx == -1 {
+	if startMatch == nil || endIdx == -1 {
 		return "", nil
 	}
 
+	startIdx := startMatch[0]
 	endOfMarker := endIdx + len(sectionMarkerEnd)
 	scanner := bufio.NewScanner(strings.NewReader(content[endOfMarker:]))
 	if scanner.Scan() {

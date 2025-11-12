@@ -14,6 +14,7 @@ type AgentInfo struct {
 	Name        string `json:"name"`
 	Version     string `json:"version"`
 	Description string `json:"description"`
+	Category    string `json:"category"`
 	FilePath    string `json:"file_path,omitempty"`
 }
 
@@ -72,6 +73,7 @@ func runList(vcAgentsDir, outputFormat string) error {
 				Name:        ag.Name,
 				Version:     ag.Version,
 				Description: ag.Description,
+				Category:    ag.Category,
 				FilePath:    ag.FilePath,
 			}
 		}
@@ -82,18 +84,49 @@ func runList(vcAgentsDir, outputFormat string) error {
 			return fmt.Errorf("failed to encode JSON output: %w", err)
 		}
 	} else {
-		// Text output
+		// Text output - group by category
 		fmt.Printf("Available Agents (%d):\n\n", len(agents))
+
+		// Group agents by category
+		categoryMap := make(map[string][]*agent.Agent)
 		for _, ag := range agents {
-			fmt.Printf("  %s", ag.Name)
-			if ag.Version != "" {
-				fmt.Printf(" (v%s)", ag.Version)
+			category := ag.Category
+			if category == "" {
+				category = "uncategorized"
 			}
-			fmt.Println()
-			if ag.Description != "" {
-				fmt.Printf("    %s\n", ag.Description)
+			categoryMap[category] = append(categoryMap[category], ag)
+		}
+
+		// Display in category order
+		categoryOrder := []string{"core", "specialized", "infrastructure", "integration", "design", "meta", "uncategorized"}
+
+		for _, category := range categoryOrder {
+			categoryAgents, exists := categoryMap[category]
+			if !exists || len(categoryAgents) == 0 {
+				continue
 			}
-			fmt.Println()
+
+			// Capitalize category name for display
+			displayCategory := category
+			if category != "uncategorized" {
+				displayCategory = string(category[0]-32) + category[1:]
+			} else {
+				displayCategory = "Uncategorized"
+			}
+
+			fmt.Printf("## %s (%d agents)\n\n", displayCategory, len(categoryAgents))
+
+			for _, ag := range categoryAgents {
+				fmt.Printf("  %s", ag.Name)
+				if ag.Version != "" {
+					fmt.Printf(" (v%s)", ag.Version)
+				}
+				fmt.Println()
+				if ag.Description != "" {
+					fmt.Printf("    %s\n", ag.Description)
+				}
+				fmt.Println()
+			}
 		}
 	}
 
