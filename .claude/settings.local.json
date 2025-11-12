@@ -35,7 +35,10 @@
       "Bash(./cami update-docs:*)",
       "mcp__cami__scan_deployed_agents",
       "Bash(git rm:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git init:*)",
+      "Bash(xargs rm:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
