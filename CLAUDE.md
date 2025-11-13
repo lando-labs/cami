@@ -47,6 +47,127 @@ Use this agent when designing user experiences, analyzing user workflows, creati
 
 <!-- /CAMI-MANAGED: DEPLOYED-AGENTS -->
 
+## Using CAMI (Claude Agent Management Interface)
+
+CAMI is the tool that manages the agents listed above. As Claude Code, you can use CAMI's MCP server to help users manage agents across their projects.
+
+### Available MCP Tools
+
+You have access to these CAMI MCP tools:
+
+1. **mcp__cami__list_agents** - List all available agents from configured sources
+   - Use when: User asks "what agents are available?" or wants to discover agents
+   - Returns: Agent names, versions, descriptions, and categories
+
+2. **mcp__cami__deploy_agents** - Deploy agents to a project's `.claude/agents/` directory
+   - Use when: User wants to add agents to a project
+   - Parameters: `agent_names` (array), `target_path` (absolute path), `overwrite` (optional)
+   - Handles: Conflict detection, directory creation
+
+3. **mcp__cami__scan_deployed_agents** - Scan a project to see what agents are deployed
+   - Use when: User asks "what agents are installed?" or wants to audit agents
+   - Parameters: `target_path` (absolute path)
+   - Returns: Agent status (up-to-date, update-available, not-deployed)
+
+4. **mcp__cami__update_claude_md** - Update a project's CLAUDE.md with agent documentation
+   - Use when: After deploying agents, to keep documentation in sync
+   - Parameters: `target_path` (absolute path)
+   - Auto-generates the "Deployed Agents" section
+
+5. **mcp__cami__add_location** - Register a project directory for agent deployment
+   - Use when: User wants to track a project in CAMI
+   - Parameters: `name` (friendly name), `path` (absolute path)
+
+6. **mcp__cami__list_locations** - List all registered project locations
+   - Use when: User asks "what projects am I tracking?"
+   - Returns: Location names and paths
+
+7. **mcp__cami__remove_location** - Unregister a project directory
+   - Use when: User wants to stop tracking a project
+   - Parameters: `name` (location name)
+
+8. **mcp__cami__list_sources** - List all configured agent sources
+   - Use when: User asks "where are my agents from?" or wants to see sources
+   - Returns: Source names, paths, priorities, agent counts, git info
+
+9. **mcp__cami__add_source** - Add a new agent source by cloning a Git repository
+   - Use when: User wants to add official agents (lando-agents) or company sources
+   - Parameters: `url` (git URL), `name` (optional), `priority` (optional, default 100)
+   - Clones to vc-agents/<name>/ and updates config
+
+10. **mcp__cami__update_source** - Update agent sources with git pull
+   - Use when: User wants to get latest agents from sources
+   - Parameters: `name` (optional, updates all if not specified)
+   - Updates sources that have git remotes
+
+11. **mcp__cami__source_status** - Show git status of agent sources
+   - Use when: User wants to check if sources have uncommitted changes
+   - Shows which sources are clean or have local modifications
+
+### Common Workflows
+
+**When user wants to add the official Lando agent library:**
+```
+1. Use mcp__cami__add_source with URL: git@github.com:lando-labs/lando-agents.git
+2. Use mcp__cami__list_agents to show newly available agents
+3. Ask user which agents they want to deploy
+4. Use mcp__cami__deploy_agents to add them to current project
+5. Use mcp__cami__update_claude_md to document the deployment
+```
+
+**When user wants to add agents to their current project:**
+```
+1. Use mcp__cami__list_agents to show available agents
+2. Ask user which agents they want
+3. Use mcp__cami__deploy_agents with current directory
+4. Use mcp__cami__update_claude_md to document the deployment
+```
+
+**When user asks "what agents do I have?":**
+```
+1. Use mcp__cami__scan_deployed_agents with current directory
+2. Show which agents are deployed and their status
+3. Suggest updates if any agents are outdated
+```
+
+**When user wants to update agents from sources:**
+```
+1. Use mcp__cami__update_source (updates all sources)
+2. Use mcp__cami__scan_deployed_agents to see which deployed agents have updates
+3. Ask if user wants to redeploy updated agents
+4. Use mcp__cami__deploy_agents with overwrite=true if needed
+```
+
+**When working with agent-architect to create new agents:**
+```
+1. Agent-architect creates the agent file
+2. Save it to vc-agents/my-agents/ or appropriate source directory
+3. Use mcp__cami__deploy_agents to deploy it to projects
+4. Use mcp__cami__update_claude_md to document it
+```
+
+### CLI Commands (for reference)
+
+Users can also run CAMI commands directly:
+
+- `./cami list` - List available agents
+- `./cami deploy <agents...> <path>` - Deploy agents
+- `./cami scan <path>` - Scan deployed agents
+- `./cami update-docs <path>` - Update CLAUDE.md
+- `./cami locations list` - List tracked locations
+- `./cami source list` - List agent sources
+- `./cami source add <git-url>` - Add a new agent source
+
+### Multi-Source Architecture
+
+CAMI supports multiple agent sources with priority-based deduplication:
+
+- **vc-agents/my-agents/** (priority 200) - User's local agents
+- **vc-agents/lando-agents/** (priority 100) - Official Lando agents
+- **vc-agents/company-agents/** (priority 150) - Company/team agents
+
+When the same agent exists in multiple sources, the highest priority wins.
+
 ## Architecture Documentation
 
 ### Open Source Strategy
