@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/lando/cami/internal/agent"
@@ -152,4 +153,157 @@ func GetStatusSymbol(status DeploymentStatus) string {
 	default:
 		return "?"
 	}
+}
+
+// ProjectInfo represents a discovered Claude Code project
+type ProjectInfo struct {
+	Path         string         `json:"path"`
+	HasClaude    bool           `json:"has_claude"`
+	HasAgents    bool           `json:"has_agents"`
+	AgentCount   int            `json:"agent_count"`
+	Agents       []*agent.Agent `json:"agents,omitempty"`
+	RelativePath string         `json:"relative_path,omitempty"`
+}
+
+// DiscoverOptions configures the discovery process
+type DiscoverOptions struct {
+	RootPath  string
+	EmptyOnly bool   // Only return projects with .claude/ but no agents
+	HasAgent  string // Only return projects that have a specific agent
+	MaxDepth  int    // Maximum directory depth (0 = unlimited)
+}
+
+// DiscoverProjects finds all Claude Code projects in a directory tree
+func DiscoverProjects(opts DiscoverOptions) ([]*ProjectInfo, error) {
+	var projects []*ProjectInfo
+
+	// Normalize root path
+	rootPath, err := filepath.Abs(opts.RootPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve path: %w", err)
+	}
+
+	// Verify root path exists
+	if _, err := os.Stat(rootPath); err != nil {
+		return nil, fmt.Errorf("path does not exist: %s", rootPath)
+	}
+
+	// Walk the directory tree
+	err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			// Skip directories we can't access
+			return nil
+		}
+
+		// Skip if not a directory
+		if !info.IsDir() {
+			return nil
+		}
+
+		// Check if this is a .claude directory
+		if info.Name() == ".claude" {
+			projectPath := filepath.Dir(path)
+
+			// Check depth limit
+			if opts.MaxDepth > 0 {
+				relPath, err := filepath.Rel(rootPath, projectPath)
+				if err == nil {
+					depth := len(strings.Split(relPath, string(filepath.Separator)))
+					if depth > opts.MaxDepth {
+						return filepath.SkipDir
+					}
+				}
+			}
+
+			// Scan this project
+			project, err := scanProject(projectPath, rootPath)
+			if err != nil {
+				// Log error but continue
+				fmt.Fprintf(os.Stderr, "Warning: failed to scan %s: %v\n", projectPath, err)
+				return filepath.SkipDir
+			}
+
+			// Apply filters
+			if opts.EmptyOnly && project.HasAgents {
+				return filepath.SkipDir
+			}
+
+			if opts.HasAgent != "" {
+				found := false
+				for _, ag := range project.Agents {
+					if ag.Name == opts.HasAgent {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return filepath.SkipDir
+				}
+			}
+
+			projects = append(projects, project)
+
+			// Skip descending into this .claude directory
+			return filepath.SkipDir
+		}
+
+		// Skip common directories that won't have projects
+		skipDirs := []string{"node_modules", ".git", "vendor", "dist", "build", ".next", ".venv", "__pycache__", "target", ".cache"}
+		for _, skip := range skipDirs {
+			if info.Name() == skip {
+				return filepath.SkipDir
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk directory tree: %w", err)
+	}
+
+	return projects, nil
+}
+
+// scanProject scans a single project directory
+func scanProject(projectPath, rootPath string) (*ProjectInfo, error) {
+	info := &ProjectInfo{
+		Path:      projectPath,
+		HasClaude: false,
+		HasAgents: false,
+	}
+
+	// Calculate relative path for display
+	relPath, err := filepath.Rel(rootPath, projectPath)
+	if err == nil && relPath != "." {
+		info.RelativePath = relPath
+	}
+
+	// Check if .claude directory exists
+	claudeDir := filepath.Join(projectPath, ".claude")
+	if stat, err := os.Stat(claudeDir); err == nil && stat.IsDir() {
+		info.HasClaude = true
+	} else {
+		return info, nil
+	}
+
+	// Check if .claude/agents directory exists
+	agentsDir := filepath.Join(claudeDir, "agents")
+	if stat, err := os.Stat(agentsDir); err != nil || !stat.IsDir() {
+		return info, nil
+	}
+
+	// Load agents
+	agents, err := agent.LoadAgentsFromPath(agentsDir)
+	if err != nil {
+		return info, fmt.Errorf("failed to load agents: %w", err)
+	}
+
+	if len(agents) > 0 {
+		info.HasAgents = true
+		info.AgentCount = len(agents)
+		info.Agents = agents
+	}
+
+	return info, nil
 }

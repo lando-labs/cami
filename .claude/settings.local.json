@@ -43,7 +43,11 @@
       "Bash(find:*)",
       "Bash(./cami init:*)",
       "Bash(./cami source:*)",
-      "Bash(./cami locations list:*)"
+      "Bash(./cami locations list:*)",
+      "Bash(git push)",
+      "Bash(./cami scan:*)",
+      "Bash(./cami:*)",
+      "Bash(go mod tidy:*)"
     ],
     "deny": [],
     "ask": []

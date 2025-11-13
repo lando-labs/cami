@@ -383,8 +383,8 @@ func SourceRemoveCommand(name string) error {
 
 	fmt.Printf("✓ Removed source %q from configuration\n", name)
 	fmt.Println()
-	fmt.Println("Note: Directory vc-agents/%s still exists.", name)
-	fmt.Println("Remove it manually with: rm -rf vc-agents/%s", name)
+	fmt.Printf("Note: Directory vc-agents/%s still exists.\n", name)
+	fmt.Printf("Remove it manually with: rm -rf vc-agents/%s\n", name)
 
 	return nil
 }

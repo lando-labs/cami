@@ -32,6 +32,7 @@ When run without arguments, launches the interactive TUI.`,
 	rootCmd.AddCommand(NewUpdateDocsCommand())
 	rootCmd.AddCommand(NewListCommand(vcAgentsDir))
 	rootCmd.AddCommand(NewScanCommand())
+	rootCmd.AddCommand(NewDiscoverCommand())
 	rootCmd.AddCommand(NewLocationsCommand())
 	rootCmd.AddCommand(NewLocationCommand())
 
