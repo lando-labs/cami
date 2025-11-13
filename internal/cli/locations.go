@@ -117,8 +117,8 @@ func runListLocations(outputFormat string) error {
 
 	// Prepare output
 	output := LocationsOutput{
-		Locations: cfg.DeployLocations,
-		Count:     len(cfg.DeployLocations),
+		Locations: cfg.Locations,
+		Count:     len(cfg.Locations),
 	}
 
 	if outputFormat == "json" {
@@ -131,21 +131,21 @@ func runListLocations(outputFormat string) error {
 	}
 
 	// Text output
-	if len(cfg.DeployLocations) == 0 {
+	if len(cfg.Locations) == 0 {
 		fmt.Println("No deployment locations configured.")
 		fmt.Println("\nTo add a location:")
 		fmt.Println("  cami location add --name <name> --path <path>")
 		return nil
 	}
 
-	fmt.Printf("Configured Deployment Locations (%d):\n\n", len(cfg.DeployLocations))
+	fmt.Printf("Configured Deployment Locations (%d):\n\n", len(cfg.Locations))
 
 	// Use tabwriter for aligned columns
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	fmt.Fprintln(w, "NAME\tPATH")
 	fmt.Fprintln(w, "----\t----")
 
-	for _, loc := range cfg.DeployLocations {
+	for _, loc := range cfg.Locations {
 		fmt.Fprintf(w, "%s\t%s\n", loc.Name, loc.Path)
 	}
 
@@ -227,7 +227,7 @@ func runRemoveLocation(name string) error {
 	}
 
 	// Check if any locations exist
-	if len(cfg.DeployLocations) == 0 {
+	if len(cfg.Locations) == 0 {
 		return fmt.Errorf("no deployment locations configured")
 	}
 

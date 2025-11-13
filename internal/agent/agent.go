@@ -27,6 +27,54 @@ type Metadata struct {
 	Description string `yaml:"description"`
 }
 
+// LoadAgentsFromPath reads all agents from a directory (supports nested folders)
+func LoadAgentsFromPath(dir string) ([]*Agent, error) {
+	return LoadAgents(dir)
+}
+
+// AgentSource represents a source with its priority
+type AgentSource struct {
+	Path     string
+	Priority int
+}
+
+// LoadAgentsFromSources loads agents from multiple sources with priority-based deduplication
+// Higher priority sources override lower priority sources when agent names conflict
+func LoadAgentsFromSources(sources []AgentSource) ([]*Agent, error) {
+	// Map to track highest priority agent for each name
+	agentMap := make(map[string]*Agent)
+	priorityMap := make(map[string]int)
+
+	// Load agents from all sources
+	for _, source := range sources {
+		agents, err := LoadAgentsFromPath(source.Path)
+		if err != nil {
+			// Log error but continue with other sources
+			fmt.Fprintf(os.Stderr, "Warning: failed to load agents from %s: %v\n", source.Path, err)
+			continue
+		}
+
+		// Process each agent
+		for _, agent := range agents {
+			existingPriority, exists := priorityMap[agent.Name]
+
+			// Add or replace agent based on priority
+			if !exists || source.Priority > existingPriority {
+				agentMap[agent.Name] = agent
+				priorityMap[agent.Name] = source.Priority
+			}
+		}
+	}
+
+	// Convert map to slice
+	var result []*Agent
+	for _, agent := range agentMap {
+		result = append(result, agent)
+	}
+
+	return result, nil
+}
+
 // LoadAgents reads all agents from the vc-agents directory (supports nested folders)
 func LoadAgents(vcAgentsDir string) ([]*Agent, error) {
 	var agents []*Agent

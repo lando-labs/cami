@@ -1,0 +1,24 @@
+package cli
+
+import (
+	"github.com/spf13/cobra"
+)
+
+// NewInitCommand creates the init command
+func NewInitCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "init",
+		Short: "Initialize CAMI configuration",
+		Long: `Initialize CAMI configuration with workspace setup.
+
+This command sets up:
+  - Agent workspace directory (vc-agents/)
+  - Default local source (my-agents/)
+  - Configuration file (~/.cami/config.yaml)`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return InitCommand()
+		},
+	}
+
+	return cmd
+}

@@ -177,7 +177,7 @@ func (m Model) viewLocationManagement() string {
 		b.WriteString("\n")
 		b.WriteString(helpStyle.Render("tab: switch field  •  enter: save  •  esc: cancel"))
 	} else {
-		if len(m.config.DeployLocations) == 0 {
+		if len(m.config.Locations) == 0 {
 			b.WriteString("No deployment locations configured.\n\n")
 			b.WriteString("Press 'a' to add a location.\n")
 		} else {
@@ -188,7 +188,7 @@ func (m Model) viewLocationManagement() string {
 			}
 			linesPerLocation := 1
 			// +1 for "Add new location" option
-			totalItems := len(m.config.DeployLocations) + 1
+			totalItems := len(m.config.Locations) + 1
 			maxVisibleLocations := (m.height - overhead) / linesPerLocation
 			if maxVisibleLocations < 1 {
 				maxVisibleLocations = 1
@@ -207,8 +207,8 @@ func (m Model) viewLocationManagement() string {
 			}
 
 			// Render visible locations
-			for i := startIdx; i < endIdx && i < len(m.config.DeployLocations); i++ {
-				loc := m.config.DeployLocations[i]
+			for i := startIdx; i < endIdx && i < len(m.config.Locations); i++ {
+				loc := m.config.Locations[i]
 				cursor := " "
 				if m.locationCursor == i {
 					cursor = ">"
@@ -224,7 +224,7 @@ func (m Model) viewLocationManagement() string {
 			}
 
 			// Add "New Location" option if visible in viewport
-			addLocationIdx := len(m.config.DeployLocations)
+			addLocationIdx := len(m.config.Locations)
 			if addLocationIdx >= startIdx && addLocationIdx < endIdx {
 				cursor := " "
 				if m.locationCursor == addLocationIdx {
@@ -271,14 +271,14 @@ func (m Model) viewDeployment() string {
 	}
 	b.WriteString(fmt.Sprintf("Deploying: %s\n\n", strings.Join(selectedNames, ", ")))
 
-	if len(m.config.DeployLocations) == 0 {
+	if len(m.config.Locations) == 0 {
 		b.WriteString(errorStyle.Render("No deployment locations configured."))
 		b.WriteString("\n\n")
 		b.WriteString("Press 'esc' to go back and configure locations.\n")
 	} else {
 		b.WriteString("Select destination:\n\n")
 
-		for i, loc := range m.config.DeployLocations {
+		for i, loc := range m.config.Locations {
 			cursor := " "
 			if m.cursor == i {
 				cursor = ">"

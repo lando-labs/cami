@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/lando/cami/internal/agent"
+	"github.com/lando/cami/internal/config"
 	"github.com/lando/cami/internal/deploy"
 	"github.com/spf13/cobra"
 )
@@ -71,10 +72,35 @@ func runDeploy(vcAgentsDir, agentNames, location string, overwrite bool, outputF
 		return fmt.Errorf("invalid location: %w", err)
 	}
 
-	// Load all available agents
-	allAgents, err := agent.LoadAgents(vcAgentsDir)
+	// Load config
+	cfg, err := config.Load()
 	if err != nil {
-		return fmt.Errorf("failed to load agents: %w", err)
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Load all available agents from all sources
+	var allAgents []*agent.Agent
+	if len(cfg.AgentSources) == 0 {
+		// Fall back to legacy behavior
+		allAgents, err = agent.LoadAgents(vcAgentsDir)
+		if err != nil {
+			return fmt.Errorf("failed to load agents: %w", err)
+		}
+	} else {
+		// Convert config sources to agent sources
+		var sources []agent.AgentSource
+		for _, src := range cfg.AgentSources {
+			sources = append(sources, agent.AgentSource{
+				Path:     src.Path,
+				Priority: src.Priority,
+			})
+		}
+
+		// Load from all sources with priority
+		allAgents, err = agent.LoadAgentsFromSources(sources)
+		if err != nil {
+			return fmt.Errorf("failed to load agents: %w", err)
+		}
 	}
 
 	// Parse requested agent names

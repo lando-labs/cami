@@ -38,7 +38,12 @@
       "Bash(git add:*)",
       "Bash(git init:*)",
       "Bash(xargs rm:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(go get:*)",
+      "Bash(find:*)",
+      "Bash(./cami init:*)",
+      "Bash(./cami source:*)",
+      "Bash(./cami locations list:*)"
     ],
     "deny": [],
     "ask": []

@@ -386,7 +386,7 @@ func (m Model) updateLocationManagement(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.adjustLocationViewport()
 		}
 	case key.Matches(msg, keys.Down):
-		if m.locationCursor < len(m.config.DeployLocations) {
+		if m.locationCursor < len(m.config.Locations) {
 			m.locationCursor++
 			m.adjustLocationViewport()
 		}
@@ -398,7 +398,7 @@ func (m Model) updateLocationManagement(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.inputField = 0
 	case msg.String() == "d":
 		// Delete the selected location
-		if m.locationCursor < len(m.config.DeployLocations) {
+		if m.locationCursor < len(m.config.Locations) {
 			m.config.RemoveDeployLocation(m.locationCursor)
 			m.config.Save()
 			if m.locationCursor > 0 {
@@ -421,12 +421,12 @@ func (m Model) updateDeployment(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.cursor--
 		}
 	case key.Matches(msg, keys.Down):
-		if m.cursor < len(m.config.DeployLocations)-1 {
+		if m.cursor < len(m.config.Locations)-1 {
 			m.cursor++
 		}
 	case key.Matches(msg, keys.Deploy), msg.String() == "enter":
-		if m.cursor < len(m.config.DeployLocations) {
-			m.deployLocation = &m.config.DeployLocations[m.cursor]
+		if m.cursor < len(m.config.Locations) {
+			m.deployLocation = &m.config.Locations[m.cursor]
 
 			// Get selected agents
 			var selectedAgents []*agent.Agent
@@ -549,7 +549,7 @@ func (m Model) updateDiscovery(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // scanLocations performs an asynchronous scan of all locations
 func (m Model) scanLocations() tea.Cmd {
 	return func() tea.Msg {
-		result, err := discovery.ScanAllLocations(m.config.DeployLocations, m.agents)
+		result, err := discovery.ScanAllLocations(m.config.Locations, m.agents)
 		return scanCompleteMsg{
 			result: result,
 			err:    err,

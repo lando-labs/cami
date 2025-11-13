@@ -26,6 +26,8 @@ When run without arguments, launches the interactive TUI.`,
 	}
 
 	// Add subcommands
+	rootCmd.AddCommand(NewInitCommand())
+	rootCmd.AddCommand(NewSourceCommand())
 	rootCmd.AddCommand(NewDeployCommand(vcAgentsDir))
 	rootCmd.AddCommand(NewUpdateDocsCommand())
 	rootCmd.AddCommand(NewListCommand(vcAgentsDir))
