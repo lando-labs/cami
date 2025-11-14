@@ -55,56 +55,69 @@ CAMI is the tool that manages the agents listed above. As Claude Code, you can u
 
 You have access to these CAMI MCP tools:
 
-1. **mcp__cami__list_agents** - List all available agents from configured sources
+1. **mcp__cami__onboard** - Get personalized onboarding guidance
+   - Use when: User is new to CAMI or asks "what should I do next?" or "help me get started"
+   - Analyzes current setup state (config, sources, agents, locations)
+   - Provides context-aware recommendations
+   - Returns structured state information
+
+2. **mcp__cami__list_agents** - List all available agents from configured sources
    - Use when: User asks "what agents are available?" or wants to discover agents
    - Returns: Agent names, versions, descriptions, and categories
 
-2. **mcp__cami__deploy_agents** - Deploy agents to a project's `.claude/agents/` directory
+3. **mcp__cami__deploy_agents** - Deploy agents to a project's `.claude/agents/` directory
    - Use when: User wants to add agents to a project
    - Parameters: `agent_names` (array), `target_path` (absolute path), `overwrite` (optional)
    - Handles: Conflict detection, directory creation
 
-3. **mcp__cami__scan_deployed_agents** - Scan a project to see what agents are deployed
+4. **mcp__cami__scan_deployed_agents** - Scan a project to see what agents are deployed
    - Use when: User asks "what agents are installed?" or wants to audit agents
    - Parameters: `target_path` (absolute path)
    - Returns: Agent status (up-to-date, update-available, not-deployed)
 
-4. **mcp__cami__update_claude_md** - Update a project's CLAUDE.md with agent documentation
+5. **mcp__cami__update_claude_md** - Update a project's CLAUDE.md with agent documentation
    - Use when: After deploying agents, to keep documentation in sync
    - Parameters: `target_path` (absolute path)
    - Auto-generates the "Deployed Agents" section
 
-5. **mcp__cami__add_location** - Register a project directory for agent deployment
+6. **mcp__cami__add_location** - Register a project directory for agent deployment
    - Use when: User wants to track a project in CAMI
    - Parameters: `name` (friendly name), `path` (absolute path)
 
-6. **mcp__cami__list_locations** - List all registered project locations
+7. **mcp__cami__list_locations** - List all registered project locations
    - Use when: User asks "what projects am I tracking?"
    - Returns: Location names and paths
 
-7. **mcp__cami__remove_location** - Unregister a project directory
+8. **mcp__cami__remove_location** - Unregister a project directory
    - Use when: User wants to stop tracking a project
    - Parameters: `name` (location name)
 
-8. **mcp__cami__list_sources** - List all configured agent sources
+9. **mcp__cami__list_sources** - List all configured agent sources
    - Use when: User asks "where are my agents from?" or wants to see sources
    - Returns: Source names, paths, priorities, agent counts, git info
 
-9. **mcp__cami__add_source** - Add a new agent source by cloning a Git repository
+10. **mcp__cami__add_source** - Add a new agent source by cloning a Git repository
    - Use when: User wants to add official agents (lando-agents) or company sources
    - Parameters: `url` (git URL), `name` (optional), `priority` (optional, default 100)
    - Clones to vc-agents/<name>/ and updates config
 
-10. **mcp__cami__update_source** - Update agent sources with git pull
+11. **mcp__cami__update_source** - Update agent sources with git pull
    - Use when: User wants to get latest agents from sources
    - Parameters: `name` (optional, updates all if not specified)
    - Updates sources that have git remotes
 
-11. **mcp__cami__source_status** - Show git status of agent sources
+12. **mcp__cami__source_status** - Show git status of agent sources
    - Use when: User wants to check if sources have uncommitted changes
    - Shows which sources are clean or have local modifications
 
 ### Common Workflows
+
+**When user is new to CAMI or asks for help:**
+```
+1. Use mcp__cami__onboard to analyze their setup
+2. Show personalized recommendations based on their state
+3. Guide them through suggested next steps
+```
 
 **When user wants to add the official Lando agent library:**
 ```

@@ -159,6 +159,22 @@ type ListSourcesResponse struct {
 	Sources []SourceInfo `json:"sources"`
 }
 
+// OnboardingState represents the current onboarding state
+type OnboardingState struct {
+	ConfigExists    bool   `json:"config_exists"`
+	SourceCount     int    `json:"source_count"`
+	LocationCount   int    `json:"location_count"`
+	HasAgentArch    bool   `json:"has_agent_architect"`
+	TotalAgents     int    `json:"total_agents"`
+	DeployedAgents  int    `json:"deployed_agents"`
+	RecommendedNext string `json:"recommended_next"`
+}
+
+// OnboardResponse wraps the onboarding state
+type OnboardResponse struct {
+	State OnboardingState `json:"state"`
+}
+
 func main() {
 	// Initialize logger to stderr
 	log.SetOutput(os.Stderr)
@@ -579,6 +595,173 @@ func main() {
 				&mcp.TextContent{Text: responseText},
 			},
 		}, nil, nil
+	})
+
+	// Register onboard tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "onboard",
+		Description: "Get personalized onboarding guidance for CAMI based on current setup state. " +
+			"Analyzes configuration, available agents, and deployed agents to provide next steps. " +
+			"Use this when user is new to CAMI or asks 'what should I do next?'",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
+		// Check if config exists
+		cfg, err := config.Load()
+		configExists := err == nil
+
+		state := OnboardingState{
+			ConfigExists: configExists,
+		}
+
+		var responseText string
+
+		if !configExists {
+			// No config - needs to run cami init
+			responseText = "# Welcome to CAMI! 🚀\n\n"
+			responseText += "CAMI is not yet initialized. Let's get you started!\n\n"
+			responseText += "## First Steps\n\n"
+			responseText += "1. **Initialize CAMI**\n"
+			responseText += "   Run: `./cami init`\n"
+			responseText += "   This creates your agent workspace at `vc-agents/my-agents/`\n\n"
+			responseText += "2. **Add the Official Agent Library** (optional but recommended)\n"
+			responseText += "   After init, you can add 29 professional agents:\n"
+			responseText += "   - Use `mcp__cami__add_source` with URL: `git@github.com:lando-labs/lando-agents.git`\n"
+			responseText += "   - Or run: `./cami source add git@github.com:lando-labs/lando-agents.git`\n\n"
+			responseText += "3. **Deploy Agents**\n"
+			responseText += "   Once you have agents available, deploy them to projects\n\n"
+			responseText += "Run `./cami init` to get started!\n"
+
+			state.RecommendedNext = "Run ./cami init"
+
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{
+					&mcp.TextContent{Text: responseText},
+				},
+			}, &OnboardResponse{State: state}, nil
+		}
+
+		// Config exists - gather state
+		state.SourceCount = len(cfg.AgentSources)
+		state.LocationCount = len(cfg.Locations)
+
+		// Check if agent-architect exists
+		archPath := filepath.Join(vcAgentsDir, "..", ".claude", "agents", "agent-architect.md")
+		if _, err := os.Stat(archPath); err == nil {
+			state.HasAgentArch = true
+		}
+
+		// Count total available agents
+		allAgents, err := agent.LoadAgents(vcAgentsDir)
+		if err == nil {
+			state.TotalAgents = len(allAgents)
+		}
+
+		// Try to count deployed agents in current directory (best effort)
+		wd, _ := os.Getwd()
+		deployedAgentsPath := filepath.Join(wd, ".claude", "agents")
+		if files, err := os.ReadDir(deployedAgentsPath); err == nil {
+			for _, file := range files {
+				if !file.IsDir() && filepath.Ext(file.Name()) == ".md" {
+					state.DeployedAgents++
+				}
+			}
+		}
+
+		// Generate personalized guidance based on state
+		responseText = "# CAMI Setup Status\n\n"
+
+		// Sources section
+		responseText += "## Agent Sources\n"
+		if state.SourceCount == 0 {
+			responseText += "⚠️ **No agent sources configured**\n\n"
+			responseText += "You won't have any agents available until you add a source.\n\n"
+			responseText += "**Recommended:** Add the official Lando agent library (29 agents)\n"
+			responseText += "- Use `mcp__cami__add_source` with URL: `git@github.com:lando-labs/lando-agents.git`\n"
+			responseText += "- Or run: `./cami source add git@github.com:lando-labs/lando-agents.git`\n\n"
+			state.RecommendedNext = "Add agent sources"
+		} else if state.SourceCount == 1 && state.TotalAgents == 0 {
+			responseText += fmt.Sprintf("✓ %d source configured (but no agents found)\n\n", state.SourceCount)
+			responseText += "Your workspace is set up, but it's empty.\n\n"
+			responseText += "**Options:**\n"
+			responseText += "1. Add official agents: `mcp__cami__add_source` with `git@github.com:lando-labs/lando-agents.git`\n"
+			responseText += "2. Create custom agents with agent-architect\n\n"
+			state.RecommendedNext = "Add agent sources or create agents"
+		} else {
+			responseText += fmt.Sprintf("✓ %d source(s) configured\n", state.SourceCount)
+			responseText += fmt.Sprintf("✓ %d agents available\n\n", state.TotalAgents)
+		}
+
+		// Agents section
+		if state.TotalAgents > 0 {
+			responseText += "## Available Agents\n"
+			responseText += fmt.Sprintf("You have access to %d agents across your sources.\n\n", state.TotalAgents)
+			responseText += "- Use `mcp__cami__list_agents` to see all available agents\n"
+			responseText += "- Use `mcp__cami__deploy_agents` to add agents to projects\n\n"
+		}
+
+		// Deployed agents section
+		if state.DeployedAgents > 0 {
+			responseText += "## Deployed Agents (Current Project)\n"
+			responseText += fmt.Sprintf("✓ %d agents deployed in this project\n\n", state.DeployedAgents)
+			responseText += "- Use `mcp__cami__scan_deployed_agents` to check for updates\n"
+			responseText += "- Use `mcp__cami__update_source` to get latest agent versions\n\n"
+		} else if state.TotalAgents > 0 {
+			responseText += "## Deployed Agents (Current Project)\n"
+			responseText += "⚠️ **No agents deployed in this project yet**\n\n"
+			responseText += "Deploy agents to get started:\n"
+			responseText += "1. Use `mcp__cami__list_agents` to see available agents\n"
+			responseText += "2. Use `mcp__cami__deploy_agents` to add them here\n"
+			responseText += "3. Use `mcp__cami__update_claude_md` to document them\n\n"
+			if state.RecommendedNext == "" {
+				state.RecommendedNext = "Deploy agents to current project"
+			}
+		}
+
+		// Locations section
+		responseText += "## Tracked Locations\n"
+		if state.LocationCount == 0 {
+			responseText += "No locations tracked yet.\n\n"
+			responseText += "Track projects to easily manage agents across multiple codebases:\n"
+			responseText += "- Use `mcp__cami__add_location` to register project directories\n"
+			responseText += "- Use `mcp__cami__list_locations` to see tracked projects\n\n"
+		} else {
+			responseText += fmt.Sprintf("✓ %d project(s) tracked\n\n", state.LocationCount)
+			responseText += "- Use `mcp__cami__list_locations` to see tracked projects\n"
+			responseText += "- Use `mcp__cami__scan_deployed_agents` to check agent status\n\n"
+		}
+
+		// Agent architect section
+		if state.HasAgentArch {
+			responseText += "## Agent Architect\n"
+			responseText += "✓ Agent-architect is available\n\n"
+			responseText += "Use agent-architect to create custom agents tailored to your needs.\n"
+			responseText += "Created agents are saved to `vc-agents/my-agents/` and can be deployed anywhere.\n\n"
+		}
+
+		// Next steps
+		responseText += "## Quick Commands\n\n"
+		responseText += "**List agents:** `mcp__cami__list_agents`\n"
+		responseText += "**Deploy agents:** `mcp__cami__deploy_agents`\n"
+		responseText += "**Scan current project:** `mcp__cami__scan_deployed_agents`\n"
+		responseText += "**Add agent source:** `mcp__cami__add_source`\n"
+		responseText += "**Update sources:** `mcp__cami__update_source`\n\n"
+
+		if state.RecommendedNext == "" {
+			if state.TotalAgents > 0 && state.DeployedAgents == 0 {
+				state.RecommendedNext = "Deploy agents to current project"
+			} else if state.TotalAgents > 0 {
+				state.RecommendedNext = "Explore and manage your agents"
+			} else {
+				state.RecommendedNext = "Add agent sources"
+			}
+		}
+
+		responseText += fmt.Sprintf("**Recommended next step:** %s\n", state.RecommendedNext)
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{
+				&mcp.TextContent{Text: responseText},
+			},
+		}, &OnboardResponse{State: state}, nil
 	})
 
 	// Register list_sources tool
