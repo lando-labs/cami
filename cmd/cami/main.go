@@ -118,7 +118,7 @@ func getVCAgentsDir() (string, error) {
 		return vcAgentsPath, nil
 	}
 
-	return "", fmt.Errorf("no agent sources found - run 'cami init' or configure ~/.cami/config.yaml")
+	return "", fmt.Errorf("no agent sources found - configure ~/.cami/config.yaml or use 'cami source add <git-url>'")
 }
 
 func runTUI(vcAgentsDir string) error {
@@ -741,7 +741,7 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "add_source",
 		Description: "Add a new agent source by cloning a Git repository. " +
-			"The repository will be cloned to vc-agents/<name>/ and added to configuration. " +
+			"The repository will be cloned to ~/.cami/sources/<name>/ and added to configuration. " +
 			"Use this to add official agent libraries or team/company agent sources.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args AddSourceArgs) (*mcp.CallToolResult, any, error) {
 		name := args.Name
@@ -807,7 +807,7 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 			return nil, nil, fmt.Errorf("failed to save config: %w", err)
 		}
 
-		responseText := fmt.Sprintf("✓ Cloned %s to vc-agents/%s\n", name, name)
+		responseText := fmt.Sprintf("✓ Cloned %s to ~/.cami/sources/%s\n", name, name)
 		responseText += fmt.Sprintf("✓ Added source with priority %d\n", priority)
 		responseText += fmt.Sprintf("✓ Found %d agents\n", agentCount)
 
@@ -940,20 +940,21 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 
 		if !configExists {
 			responseText = "# Welcome to CAMI! 🚀\n\n"
-			responseText += "CAMI is not yet initialized. Let's get you started!\n\n"
-			responseText += "## First Steps\n\n"
-			responseText += "1. **Initialize CAMI**\n"
-			responseText += "   Run: `./cami init`\n"
-			responseText += "   This creates your agent workspace at `vc-agents/my-agents/`\n\n"
-			responseText += "2. **Add the Official Agent Library** (optional but recommended)\n"
-			responseText += "   After init, you can add 29 professional agents:\n"
-			responseText += "   - Use `mcp__cami__add_source` with URL: `git@github.com:lando-labs/lando-agents.git`\n"
-			responseText += "   - Or run: `./cami source add git@github.com:lando-labs/lando-agents.git`\n\n"
-			responseText += "3. **Deploy Agents**\n"
-			responseText += "   Once you have agents available, deploy them to projects\n\n"
-			responseText += "Run `./cami init` to get started!\n"
+			responseText += "CAMI is not yet configured. Let me help you get started!\n\n"
+			responseText += "## First Step: Add Agent Sources\n\n"
+			responseText += "I recommend adding the official Lando agent library which includes 28 specialized agents:\n\n"
+			responseText += "**I can do this for you right now!** Just say:\n"
+			responseText += "  \"Add the official Lando agent library\"\n\n"
+			responseText += "Or you can do it manually:\n"
+			responseText += "- CLI: `cami source add git@github.com:lando-labs/lando-agents.git`\n"
+			responseText += "- MCP: Use `mcp__cami__add_source` with URL: `git@github.com:lando-labs/lando-agents.git`\n\n"
+			responseText += "This will:\n"
+			responseText += "1. Create `~/.cami/` directory for global configuration\n"
+			responseText += "2. Clone the agent library to `~/.cami/sources/lando-agents/`\n"
+			responseText += "3. Make 28 professional agents available across all your projects\n\n"
+			responseText += "After that, you can deploy agents to any project with `mcp__cami__deploy_agents`!\n"
 
-			state.RecommendedNext = "Run ./cami init"
+			state.RecommendedNext = "Add the official Lando agent library"
 
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
@@ -965,7 +966,15 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 		state.LocationCount = len(cfg.Locations)
 
 		// Count total available agents
-		allAgents, err := agent.LoadAgents(vcAgentsDir)
+		// Convert config sources to agent sources
+		agentSources := make([]agent.AgentSource, len(cfg.AgentSources))
+		for i, src := range cfg.AgentSources {
+			agentSources[i] = agent.AgentSource{
+				Path:     src.Path,
+				Priority: src.Priority,
+			}
+		}
+		allAgents, err := agent.LoadAgentsFromSources(agentSources)
 		if err == nil {
 			state.TotalAgents = len(allAgents)
 		}
