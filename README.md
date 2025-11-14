@@ -6,10 +6,10 @@ CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynami
 
 ## Features
 
-- **28 Version-Controlled Agents**: Curated collection of specialized agents for every development need
+- **Version-Controlled Agents**: Manage specialized agents from Git repositories
 - **MCP Server Integration**: 12 MCP tools for native Claude Code workflows
 - **Global Agent Storage**: Single source of truth at `~/.cami/sources/`
-- **Priority-Based Deduplication**: Override official agents with custom versions
+- **Priority-Based Deduplication**: Override agents with custom versions from higher-priority sources
 - **Smart Documentation**: Automatic CLAUDE.md updates with deployed agent information
 - **Interactive TUI**: Beautiful keyboard-driven interface for quick deployments
 - **Full CLI Support**: Programmatic deployment and management commands
@@ -30,22 +30,22 @@ go build -o cami ./cmd/cami
 ### 2. Initialize CAMI
 
 ```bash
-# Add the official agent library
+# Add your agent repository
 mkdir -p ~/.cami/sources
 cd ~/.cami/sources
-git clone git@github.com:lando-labs/lando-agents.git
+git clone <your-agent-repo-url> my-agents
 
 # Create configuration
 cat > ~/.cami/config.yaml << 'EOF'
 version: "1"
 agent_sources:
-  - name: lando-agents
+  - name: my-agents
     type: local
-    path: ~/.cami/sources/lando-agents
+    path: ~/.cami/sources/my-agents
     priority: 100
     git:
       enabled: true
-      remote: git@github.com:lando-labs/lando-agents.git
+      remote: <your-agent-repo-url>
 
 deploy_locations:
   - name: my-project
@@ -114,8 +114,7 @@ CAMI uses a global agent repository at `~/.cami/sources/` instead of per-project
 ~/.cami/
 ├── config.yaml           # Global configuration
 ├── sources/              # Global agent sources
-│   ├── lando-agents/    # Official agents (git@github.com:lando-labs/lando-agents.git)
-│   ├── company-agents/  # Company/team agents (optional)
+│   ├── team-agents/     # Team/company agents (optional)
 │   └── my-agents/       # Personal custom agents (optional)
 └── cami                 # Single binary (MCP + CLI + TUI)
 ```
@@ -132,17 +131,14 @@ When the same agent exists in multiple sources, CAMI uses priority-based dedupli
 
 ```yaml
 agent_sources:
-  - name: lando-agents
-    priority: 100        # Official agents (lower priority)
-
-  - name: company-agents
-    priority: 150        # Company-specific (medium priority)
+  - name: team-agents
+    priority: 100        # Team/company agents (lower priority)
 
   - name: my-agents
     priority: 200        # Personal overrides (highest priority)
 ```
 
-**Example**: If "frontend" agent exists in all three sources, the version from `my-agents` (priority 200) is used.
+**Example**: If "frontend" agent exists in both sources, the version from `my-agents` (priority 200) is used.
 
 ## MCP Tools Reference
 
@@ -181,7 +177,7 @@ Claude: *uses mcp__cami__deploy_agents*
 
 User: "What agents are available?"
 Claude: *uses mcp__cami__list_agents*
-"I found 28 agents across 2 sources..."
+"I found X agents across Y sources..."
 ```
 
 See [CLAUDE.md](CLAUDE.md) for complete MCP tool documentation and workflows.
@@ -213,49 +209,28 @@ cami                                # Launch TUI for deployment
 cami --help                         # Show full help
 ```
 
-## Available Agents
+## Agent Management
 
-CAMI includes **28 specialized agents** covering the full development spectrum:
+CAMI manages agents from Git repositories that you configure. Agents are markdown files with YAML frontmatter that define:
 
-**Core Development (5):**
-- `architect` - System architecture and design decisions
-- `frontend` - React 19+, Next.js 15+, modern web frameworks
-- `backend` - Node.js 18+, APIs, databases, server-side logic
-- `mobile-native` - iOS/Android native development (React Native, Swift, Kotlin)
-- `qa` - Testing, quality assurance, test coverage analysis
+- **Name & Version**: Semantic versioning for tracking updates
+- **Description**: What the agent specializes in
+- **System Prompt**: Instructions for Claude Code when the agent is invoked
 
-**Specialized Domains (12):**
-- `ai-ml-specialist` - AI/ML integration and model deployment
-- `analytics-interpreter` - Product analytics and metrics analysis
-- `blockchain-specialist` - Smart contracts and Web3 development
-- `data-engineer` - Data pipelines and warehouse architecture
-- `design-system-specialist` - Component libraries and design tokens
-- `embedded-systems` - IoT, firmware, real-time systems
-- `game-dev` - Game engines and mechanics
-- `react-specialist` - Advanced React 19+ patterns and Server Components
-- `research-synthesizer` - Qualitative research synthesis
-- `terminal-specialist` - CLI tools and terminal UIs
-- `use-case-specialist` - Tool exploration and value demonstration
-- `web-scraper` - Web data extraction and scraping pipelines
+**Agent Structure:**
+```markdown
+---
+name: example-agent
+version: "1.0.0"
+description: Use this agent when...
+---
 
-**Infrastructure & Operations (5):**
-- `deploy` - Deployment infrastructure and CI/CD pipelines
-- `devops` - Infrastructure as code, Kubernetes, Terraform
-- `gcp-firebase` - Google Cloud Platform and Firebase services
-- `performance-optimizer` - Performance analysis and optimization
-- `security-specialist` - Security audits and OWASP compliance
+# Agent Instructions
 
-**Integration & APIs (2):**
-- `api-integrator` - Third-party API integration
-- `mcp-specialist` - Model Context Protocol development
+Your specialized instructions here...
+```
 
-**Design & Documentation (4):**
-- `accessibility-expert` - WCAG compliance and inclusive design
-- `designer` - Visual design and design systems
-- `docs-writer` - Technical documentation
-- `ux` - User experience and interaction design
-
-Run `cami list` for complete descriptions and version information.
+After adding agent sources, use `cami list` (CLI) or `mcp__cami__list_agents` (MCP) to see available agents and their descriptions.
 
 ## .camiignore Support
 
@@ -288,13 +263,13 @@ Supports glob patterns (`*.md`, `docs/`, etc.) and comments (`#`).
 ```yaml
 version: "1"
 agent_sources:
-  - name: lando-agents
+  - name: team-agents
     type: local
-    path: ~/.cami/sources/lando-agents
+    path: ~/.cami/sources/team-agents
     priority: 100
     git:
       enabled: true
-      remote: git@github.com:lando-labs/lando-agents.git
+      remote: git@github.com:yourorg/team-agents.git
 
   - name: my-agents
     type: local
@@ -481,7 +456,6 @@ go test ./...
 - ✅ Source management tools (add, update, status)
 - ✅ Location tracking across projects
 - ✅ .camiignore support with glob patterns
-- ✅ 28 specialized agents at v1.1.0+
 - ✅ Comprehensive MCP-first documentation
 
 ### Roadmap
