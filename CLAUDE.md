@@ -27,8 +27,7 @@ CAMI uses a global agent repository at `~/.cami/sources/` instead of per-project
 ~/.cami/
 ├── config.yaml           # Global configuration
 ├── sources/              # Global agent sources
-│   ├── lando-agents/    # Official agents (cloned from GitHub)
-│   ├── company-agents/  # Company/team agents (optional)
+│   ├── team-agents/     # Team/company agents (optional)
 │   └── my-agents/       # Personal custom agents (optional)
 └── cami                 # Single binary (MCP + CLI)
 ```
@@ -46,13 +45,13 @@ CAMI uses a global agent repository at `~/.cami/sources/` instead of per-project
 ```yaml
 version: "1"
 agent_sources:
-  - name: lando-agents
+  - name: team-agents
     type: local
-    path: ~/.cami/sources/lando-agents
+    path: ~/.cami/sources/team-agents
     priority: 100
     git:
       enabled: true
-      remote: git@github.com:lando-labs/lando-agents.git
+      remote: git@github.com:yourorg/team-agents.git
 
   - name: my-agents
     type: local
@@ -68,7 +67,7 @@ deploy_locations:
     path: /Users/lando/clients/acme-app
 ```
 
-**Priority-based deduplication**: When the same agent exists in multiple sources, the highest priority source wins (my-agents: 200 > lando-agents: 100).
+**Priority-based deduplication**: When the same agent exists in multiple sources, the highest priority source wins (my-agents: 200 > team-agents: 100).
 
 ## MCP Server Configuration
 
@@ -114,7 +113,7 @@ CAMI provides 12 MCP tools for Claude Code to manage agents. These tools enable 
 ```
 User: "What agents are available?"
 Claude: *uses mcp__cami__list_agents*
-"I found 29 agents across 2 sources..."
+"I found X agents across Y sources..."
 ```
 
 #### 2. `mcp__cami__deploy_agents`
