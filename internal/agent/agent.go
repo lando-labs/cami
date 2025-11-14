@@ -75,18 +75,98 @@ func LoadAgentsFromSources(sources []AgentSource) ([]*Agent, error) {
 	return result, nil
 }
 
+// loadCamiIgnore reads and parses a .camiignore file, returning a list of patterns to ignore
+func loadCamiIgnore(dir string) ([]string, error) {
+	ignorePath := filepath.Join(dir, ".camiignore")
+
+	file, err := os.Open(ignorePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// No .camiignore file is fine, return empty list
+			return []string{}, nil
+		}
+		return nil, fmt.Errorf("failed to open .camiignore: %w", err)
+	}
+	defer file.Close()
+
+	var patterns []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		patterns = append(patterns, line)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading .camiignore: %w", err)
+	}
+
+	return patterns, nil
+}
+
+// shouldIgnore checks if a file path matches any of the ignore patterns
+func shouldIgnore(relPath string, patterns []string) bool {
+	fileName := filepath.Base(relPath)
+
+	for _, pattern := range patterns {
+		// Check if pattern matches filename
+		matched, err := filepath.Match(pattern, fileName)
+		if err == nil && matched {
+			return true
+		}
+
+		// Check if pattern matches relative path
+		matched, err = filepath.Match(pattern, relPath)
+		if err == nil && matched {
+			return true
+		}
+
+		// Check if it's a directory pattern (ends with /)
+		if strings.HasSuffix(pattern, "/") {
+			dirPattern := strings.TrimSuffix(pattern, "/")
+			if strings.HasPrefix(relPath, dirPattern+"/") || relPath == dirPattern {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 // LoadAgents reads all agents from the vc-agents directory (supports nested folders)
 func LoadAgents(vcAgentsDir string) ([]*Agent, error) {
 	var agents []*Agent
 
+	// Load .camiignore patterns if they exist
+	ignorePatterns, err := loadCamiIgnore(vcAgentsDir)
+	if err != nil {
+		// Log warning but continue
+		fmt.Fprintf(os.Stderr, "Warning: failed to load .camiignore: %v\n", err)
+		ignorePatterns = []string{}
+	}
+
 	// Walk the directory tree to support categorized agents in subdirectories
-	err := filepath.Walk(vcAgentsDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(vcAgentsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		// Skip if not a .md file
 		if info.IsDir() || !strings.HasSuffix(info.Name(), ".md") {
+			return nil
+		}
+
+		// Get relative path for ignore checking
+		relPath, err := filepath.Rel(vcAgentsDir, path)
+		if err != nil {
+			return err
+		}
+
+		// Check if file should be ignored
+		if shouldIgnore(relPath, ignorePatterns) {
 			return nil
 		}
 
@@ -101,7 +181,7 @@ func LoadAgents(vcAgentsDir string) ([]*Agent, error) {
 		// Extract category from the folder structure
 		// If agent is in vcAgentsDir/category/agent.md, category is extracted
 		// If agent is in vcAgentsDir/agent.md, category is empty (uncategorized)
-		relPath, err := filepath.Rel(vcAgentsDir, filepath.Dir(path))
+		relPath, err = filepath.Rel(vcAgentsDir, filepath.Dir(path))
 		if err != nil {
 			return err
 		}

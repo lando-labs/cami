@@ -1,159 +1,371 @@
 # CAMI - Claude Agent Management Interface
 
-A comprehensive toolkit for managing and deploying Claude Code agents across projects. CAMI provides a rich terminal UI, powerful CLI commands, and native MCP server integration for seamless Claude Code workflows.
+**MCP-First Architecture for Claude Code Integration**
+
+CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynamically manage specialized AI agents. It provides a single binary with dual modes: MCP server for Claude Code integration (primary) and CLI for scripting/automation (secondary).
 
 ## Features
 
-- **23 Version-Controlled Agents**: Curated collection of specialized agents for every development need
-- **Interactive TUI**: Beautiful keyboard-driven interface built with Bubbletea
-- **Full CLI Support**: Programmatic deployment and management commands
-- **MCP Server Integration**: Native Claude Code/Desktop integration via Model Context Protocol
-- **Agent Discovery**: Scan and update deployed agents across projects
+- **28 Version-Controlled Agents**: Curated collection of specialized agents for every development need
+- **MCP Server Integration**: 12 MCP tools for native Claude Code workflows
+- **Global Agent Storage**: Single source of truth at `~/.cami/sources/`
+- **Priority-Based Deduplication**: Override official agents with custom versions
 - **Smart Documentation**: Automatic CLAUDE.md updates with deployed agent information
-- **Multi-Select Deployment**: Deploy multiple agents at once
-- **Location Management**: Configure and manage deployment locations
-- **Conflict Detection**: Safe deployment with existing file detection
+- **Interactive TUI**: Beautiful keyboard-driven interface for quick deployments
+- **Full CLI Support**: Programmatic deployment and management commands
+- **Location Management**: Track and manage deployment across multiple projects
 - **Version Tracking**: Compare deployed versions with available updates
+- **Conflict Detection**: Safe deployment with existing file detection
+- **.camiignore Support**: Flexible file filtering with glob patterns
 
-## Installation
+## Quick Start
 
-### CLI and TUI
-
-Build from source:
-
-```bash
-go build -o cami cmd/cami/main.go
-```
-
-Or install to your PATH:
+### 1. Build the Binary
 
 ```bash
-go install ./cmd/cami
+cd /path/to/cami
+go build -o cami ./cmd/cami
 ```
 
-### MCP Server (for Claude Code/Desktop)
-
-Build the MCP server:
+### 2. Initialize CAMI
 
 ```bash
-go build -o cami-mcp cmd/cami-mcp/main.go
+# Add the official agent library
+mkdir -p ~/.cami/sources
+cd ~/.cami/sources
+git clone git@github.com:lando-labs/lando-agents.git
+
+# Create configuration
+cat > ~/.cami/config.yaml << 'EOF'
+version: "1"
+agent_sources:
+  - name: lando-agents
+    type: local
+    path: ~/.cami/sources/lando-agents
+    priority: 100
+    git:
+      enabled: true
+      remote: git@github.com:lando-labs/lando-agents.git
+
+deploy_locations:
+  - name: my-project
+    path: /Users/yourname/projects/my-project
+EOF
 ```
 
-Configure in Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+### 3. Configure for Claude Code
+
+Add `.mcp.json` to your project:
 
 ```json
 {
   "mcpServers": {
     "cami": {
-      "command": "/absolute/path/to/cami-mcp",
-      "env": {
-        "CAMI_VC_AGENTS_DIR": "/absolute/path/to/cami/vc-agents"
+      "command": "/absolute/path/to/cami",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+Or configure globally in `~/.claude.json`:
+
+```json
+{
+  "projects": {
+    "/your/project/path": {
+      "mcpServers": {
+        "cami": {
+          "type": "stdio",
+          "command": "/absolute/path/to/cami",
+          "args": ["--mcp"],
+          "env": {}
+        }
       }
     }
   }
 }
 ```
 
-See [reference/MCP_README.md](reference/MCP_README.md) for detailed MCP server documentation or [QUICKSTART.md](QUICKSTART.md) for a quick setup guide.
+## Architecture
 
-## Usage
-
-CAMI supports three modes of operation:
-
-### 1. Interactive TUI Mode
-
-Launch the interactive terminal UI (no arguments):
+### Single Binary, Dual Modes
 
 ```bash
-./cami
+# MCP Server Mode (primary) - for Claude Code
+$ cami --mcp
+# Runs as MCP server on stdio for Claude Code integration
+
+# CLI Mode (secondary) - for scripting and quick checks
+$ cami list
+$ cami deploy frontend backend ~/projects/my-app
+$ cami scan ~/projects/my-app
+
+# Interactive TUI (no args)
+$ cami
+# Launches terminal UI for browsing and deployment
 ```
 
-Perfect for browsing agents, managing locations, and interactive deployment.
+### Global Agent Storage
 
-### 2. CLI Commands
+CAMI uses a global agent repository at `~/.cami/sources/` instead of per-project storage:
 
-Use command-line interface for programmatic operations:
-
-```bash
-# Deploy agents
-./cami deploy --agents frontend,backend --location ~/my-project
-
-# Update documentation
-./cami update-docs --location ~/my-project
-
-# List available agents
-./cami list
-
-# Scan deployed agents
-./cami scan --location ~/my-project
+```
+~/.cami/
+├── config.yaml           # Global configuration
+├── sources/              # Global agent sources
+│   ├── lando-agents/    # Official agents (git@github.com:lando-labs/lando-agents.git)
+│   ├── company-agents/  # Company/team agents (optional)
+│   └── my-agents/       # Personal custom agents (optional)
+└── cami                 # Single binary (MCP + CLI + TUI)
 ```
 
-See [reference/CLI-COMMANDS.md](reference/CLI-COMMANDS.md) for complete CLI reference.
+**Benefits of global storage:**
+- Agents available across all projects without duplication
+- Single source of truth for agent versions
+- Easier to update agents globally
+- Simpler mental model
 
-### 3. MCP Server (Claude Integration)
+### Priority-Based Deduplication
 
-Once configured, Claude Code/Desktop can use CAMI's 7 MCP tools directly:
+When the same agent exists in multiple sources, CAMI uses priority-based deduplication:
 
-**Agent Management:**
-- `deploy_agents` - Deploy agents to project directories
-- `update_claude_md` - Update CLAUDE.md with agent documentation
-- `list_agents` - List all available agents with versions
-- `scan_deployed_agents` - Scan projects for deployed agents
+```yaml
+agent_sources:
+  - name: lando-agents
+    priority: 100        # Official agents (lower priority)
 
-**Location Management:**
-- `add_location` - Register new deployment locations
-- `list_locations` - List configured deployment locations
-- `remove_location` - Remove deployment locations
+  - name: company-agents
+    priority: 150        # Company-specific (medium priority)
+
+  - name: my-agents
+    priority: 200        # Personal overrides (highest priority)
+```
+
+**Example**: If "frontend" agent exists in all three sources, the version from `my-agents` (priority 200) is used.
+
+## MCP Tools Reference
+
+CAMI provides 12 MCP tools for Claude Code to manage agents. These tools enable natural language workflows like "Add the frontend agent to this project" or "What agents do I have?".
+
+### Core Agent Management
+
+1. **`mcp__cami__list_agents`** - List all available agents from configured sources
+2. **`mcp__cami__deploy_agents`** - Deploy selected agents to a project's `.claude/agents/` directory
+3. **`mcp__cami__scan_deployed_agents`** - Scan a project to see what agents are deployed and their status
+4. **`mcp__cami__update_claude_md`** - Update a project's CLAUDE.md with agent documentation
+
+### Source Management
+
+5. **`mcp__cami__list_sources`** - List all configured agent sources
+6. **`mcp__cami__add_source`** - Add a new agent source by cloning a Git repository
+7. **`mcp__cami__update_source`** - Update agent sources with git pull
+8. **`mcp__cami__source_status`** - Show git status of agent sources
+
+### Location Management
+
+9. **`mcp__cami__add_location`** - Register a project directory for agent deployment tracking
+10. **`mcp__cami__list_locations`** - List all registered project locations
+11. **`mcp__cami__remove_location`** - Unregister a project directory
+
+### Onboarding
+
+12. **`mcp__cami__onboard`** - Get personalized onboarding guidance based on current setup
 
 Example usage:
 ```
-You: "Deploy the architect and backend agents to my current project"
-Claude: [uses deploy_agents tool]
+User: "Add frontend and backend agents to this project"
+Claude: *uses mcp__cami__deploy_agents*
+"✓ Deployed frontend (v1.1.0)
+ ✓ Deployed backend (v1.1.0)"
 
-You: "What agents are available?"
-Claude: [uses list_agents tool]
+User: "What agents are available?"
+Claude: *uses mcp__cami__list_agents*
+"I found 28 agents across 2 sources..."
+```
+
+See [CLAUDE.md](CLAUDE.md) for complete MCP tool documentation and workflows.
+
+## CLI Commands (Secondary Interface)
+
+While MCP is the primary interface, CAMI provides CLI commands for scripting and quick checks:
+
+```bash
+# Agent management
+cami list                           # List available agents
+cami deploy <agents...> <path>      # Deploy agents to project
+cami scan <path>                    # Scan deployed agents
+cami update-docs <path>             # Update CLAUDE.md
+
+# Source management
+cami source list                    # List agent sources
+cami source add <git-url>           # Add new source
+cami source update [name]           # Update sources
+cami source status                  # Check git status
+
+# Location management
+cami locations list                 # List tracked locations
+cami locations add <name> <path>    # Add location
+cami locations remove <name>        # Remove location
+
+# Interactive TUI
+cami                                # Launch TUI for deployment
+cami --help                         # Show full help
 ```
 
 ## Available Agents
 
-CAMI includes **23 specialized agents** covering the full development spectrum:
+CAMI includes **28 specialized agents** covering the full development spectrum:
 
-**Core Development:**
-- `architect` - System architecture and design
-- `frontend` - React, Vue, modern web frameworks
-- `backend` - APIs, databases, server-side logic
-- `mobile-native` - iOS/Android native development
+**Core Development (5):**
+- `architect` - System architecture and design decisions
+- `frontend` - React 19+, Next.js 15+, modern web frameworks
+- `backend` - Node.js 18+, APIs, databases, server-side logic
+- `mobile-native` - iOS/Android native development (React Native, Swift, Kotlin)
+- `qa` - Testing, quality assurance, test coverage analysis
 
-**Specialized Domains:**
-- `ai-ml-specialist` - AI/ML integration and deployment
-- `blockchain-specialist` - Smart contracts and Web3
-- `data-engineer` - Data pipelines and warehouses
-- `embedded-systems` - IoT and firmware development
+**Specialized Domains (12):**
+- `ai-ml-specialist` - AI/ML integration and model deployment
+- `analytics-interpreter` - Product analytics and metrics analysis
+- `blockchain-specialist` - Smart contracts and Web3 development
+- `data-engineer` - Data pipelines and warehouse architecture
+- `design-system-specialist` - Component libraries and design tokens
+- `embedded-systems` - IoT, firmware, real-time systems
 - `game-dev` - Game engines and mechanics
+- `react-specialist` - Advanced React 19+ patterns and Server Components
+- `research-synthesizer` - Qualitative research synthesis
+- `terminal-specialist` - CLI tools and terminal UIs
+- `use-case-specialist` - Tool exploration and value demonstration
+- `web-scraper` - Web data extraction and scraping pipelines
 
-**Infrastructure & Operations:**
-- `deploy` - Deployment infrastructure and CI/CD
-- `devops` - Infrastructure as code and automation
-- `gcp-firebase` - Google Cloud Platform and Firebase
+**Infrastructure & Operations (5):**
+- `deploy` - Deployment infrastructure and CI/CD pipelines
+- `devops` - Infrastructure as code, Kubernetes, Terraform
+- `gcp-firebase` - Google Cloud Platform and Firebase services
 - `performance-optimizer` - Performance analysis and optimization
-- `security-specialist` - Security audits and compliance
+- `security-specialist` - Security audits and OWASP compliance
 
-**Integration & APIs:**
+**Integration & APIs (2):**
 - `api-integrator` - Third-party API integration
 - `mcp-specialist` - Model Context Protocol development
 
-**Quality & Design:**
-- `qa` - Testing and quality assurance
+**Design & Documentation (4):**
 - `accessibility-expert` - WCAG compliance and inclusive design
 - `designer` - Visual design and design systems
+- `docs-writer` - Technical documentation
 - `ux` - User experience and interaction design
 
-**Documentation & Tools:**
-- `docs-writer` - Technical documentation
-- `terminal-specialist` - CLI tools and terminal UIs
-- `agent-architect` - Claude agent design and optimization
+Run `cami list` for complete descriptions and version information.
 
-Run `./cami list` for complete descriptions and version information.
+## .camiignore Support
+
+Each agent source can include a `.camiignore` file to exclude documentation and non-agent files:
+
+```
+# CAMI Ignore File
+# Patterns for files that should not be loaded as agents
+
+# Documentation files
+README.md
+CONTRIBUTING.md
+LICENSE.md
+
+# Patterns
+*.txt
+docs/
+
+# Hidden files
+.git/
+.github/
+```
+
+Supports glob patterns (`*.md`, `docs/`, etc.) and comments (`#`).
+
+## Configuration Format
+
+`~/.cami/config.yaml`:
+
+```yaml
+version: "1"
+agent_sources:
+  - name: lando-agents
+    type: local
+    path: ~/.cami/sources/lando-agents
+    priority: 100
+    git:
+      enabled: true
+      remote: git@github.com:lando-labs/lando-agents.git
+
+  - name: my-agents
+    type: local
+    path: ~/.cami/sources/my-agents
+    priority: 200
+    git:
+      enabled: false
+
+deploy_locations:
+  - name: my-project
+    path: /Users/username/projects/my-project
+  - name: client-project
+    path: /Users/username/clients/acme-app
+```
+
+## Agent Versioning
+
+Each agent follows semantic versioning (MAJOR.MINOR.PATCH) in its frontmatter:
+
+```markdown
+---
+name: frontend
+version: "1.1.0"
+description: Use this agent when building user interfaces...
+---
+```
+
+CAMI tracks versions to detect when updates are available via `scan_deployed_agents`.
+
+## Deployment Workflow
+
+When you deploy agents, CAMI:
+
+1. Creates `.claude/agents/` directory in the target location if needed
+2. Copies selected agent files with YAML frontmatter and content
+3. Detects conflicts with existing files (safe by default)
+4. Shows deployment results with success/error/conflict status
+5. Optionally updates `CLAUDE.md` with deployed agent documentation
+
+### Example Workflows
+
+**Via MCP (Claude Code):**
+```
+User: "Add frontend and backend agents"
+Claude: Uses mcp__cami__deploy_agents → mcp__cami__update_claude_md
+
+User: "What agents do I have?"
+Claude: Uses mcp__cami__scan_deployed_agents
+
+User: "Update my agents"
+Claude: Uses mcp__cami__update_source → mcp__cami__scan_deployed_agents
+```
+
+**Via CLI:**
+```bash
+# Deploy agents to a project
+cami deploy --agents frontend,backend,qa --location ~/projects/my-app
+
+# Update project documentation
+cami update-docs --location ~/projects/my-app
+
+# Verify deployment
+cami scan --location ~/projects/my-app
+```
+
+**Via TUI:**
+1. Launch `cami`
+2. Select agents with `space`
+3. Press `d` to deploy
+4. Choose location
+5. Press `i` to view and update deployed agents
 
 ## Keyboard Shortcuts (TUI Mode)
 
@@ -182,229 +394,111 @@ Run `./cami list` for complete descriptions and version information.
 - `esc` - Back to agent selection
 - `q` - Quit
 
-### Adding a Location
-- `tab` - Switch between name and path fields
-- Type to enter text
-- `backspace` - Delete character
-- `enter` - Save location
-- `esc` - Cancel
-
-### Deployment View
-- `↑/k` - Move up
-- `↓/j` - Move down
-- `enter` - Deploy to selected location
-- `esc` - Back to agent selection
-- `q` - Quit
-
-### Results View
-- `enter` - Return to agent selection
-- `q` - Quit
-
-## Configuration
-
-CAMI stores deployment locations in `~/.cami.json`. This file is created automatically when you add your first location.
-
-Example configuration:
-
-```json
-{
-  "deploy_locations": [
-    {
-      "name": "my-project",
-      "path": "/Users/username/projects/my-project"
-    }
-  ]
-}
-```
-
-## Agent Structure
-
-Agents are stored in the `vc-agents/` directory with YAML frontmatter:
-
-```markdown
----
-name: architect
-version: "1.0.0"
-description: System architecture and design specialist
----
-
-[Agent content here]
-```
-
-## Deployment Workflow
-
-When you deploy agents, CAMI:
-
-1. Creates `.claude/agents/` directory in the target location if needed
-2. Copies selected agent files with YAML frontmatter and content
-3. Detects conflicts with existing files (safe by default)
-4. Shows deployment results with success/error/conflict status
-5. Optionally updates `CLAUDE.md` with deployed agent documentation
-
-### Example Workflow
-
-```bash
-# 1. Deploy agents to a project
-./cami deploy --agents frontend,backend,qa --location ~/projects/my-app
-
-# 2. Update project documentation
-./cami update-docs --location ~/projects/my-app
-
-# 3. Verify deployment
-./cami scan --location ~/projects/my-app
-```
-
-Or use the TUI for interactive deployment:
-1. Launch `./cami`
-2. Select agents with `space`
-3. Press `d` to deploy
-4. Choose location
-5. Press `i` to view and update deployed agents
-
-## Quick Start
-
-```bash
-# Clone and build
-cd /path/to/cami
-go build -o cami cmd/cami/main.go
-
-# Launch interactive mode
-./cami
-
-# Or use CLI commands
-./cami deploy --agents architect,frontend --location ~/my-project
-./cami update-docs --location ~/my-project
-
-# For Claude Code integration, build MCP server
-go build -o cami-mcp cmd/cami-mcp/main.go
-# Then configure in Claude Desktop (see Installation section)
-```
-
-## Documentation
-
-- **[README.md](README.md)** - This file, main entry point
-- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute getting started guide
-- **[reference/CLI-COMMANDS.md](reference/CLI-COMMANDS.md)** - Complete CLI reference and examples
-- **[reference/MCP_README.md](reference/MCP_README.md)** - MCP server setup and integration guide
-- **[reference/](reference/)** - Detailed technical documentation
-  - [mcp-architecture.md](reference/mcp-architecture.md) - MCP server architecture
-  - [tool-catalog.md](reference/tool-catalog.md) - MCP tool reference
-  - [development-guide.md](reference/development-guide.md) - Contributing guide
-  - [cami-development-workflow.md](reference/cami-development-workflow.md) - Development workflow
-  - [ai-generation-standard.md](reference/ai-generation-standard.md) - Agent generation standards
-  - [MCP_INSTALLATION.md](reference/MCP_INSTALLATION.md) - Detailed MCP installation guide
-
-## Version
-
-**CAMI v0.2.0** - Current Release
-
-### What's New in v0.2.0
-- Full CLI support with deploy, scan, list, and update-docs commands
-- MCP server for native Claude Code/Desktop integration
-- Agent discovery view in TUI (press `i`)
-- Smart CLAUDE.md documentation updates
-- JSON output format for programmatic use
-- 23 specialized agents (expanded from initial set)
-
 ## Development
 
 ### Project Structure
 
 ```
 cami/
-├── cmd/
-│   ├── cami/              # CLI/TUI entry point
-│   └── cami-mcp/          # MCP server entry point
+├── cmd/cami/main.go       # Single binary entry point
+│   ├── main()             # Mode detection: --mcp, CLI, or TUI
+│   ├── runMCPServer()     # MCP server mode
+│   ├── runCLI()           # CLI mode
+│   └── runTUI()           # TUI mode
 ├── internal/
-│   ├── agent/             # Agent parsing and metadata
-│   ├── cli/               # CLI command implementations
+│   ├── agent/             # Agent loading and parsing
+│   │   ├── agent.go       # Agent struct and frontmatter
+│   │   └── loader.go      # LoadAgentsFromSources(), .camiignore support
 │   ├── config/            # Configuration management
-│   ├── deploy/            # Deployment engine
-│   ├── discovery/         # Agent scanning and version comparison
-│   ├── docs/              # CLAUDE.md update logic
-│   ├── mcp/               # MCP server implementation
-│   └── tui/               # Bubbletea TUI interface
-├── vc-agents/             # 23 version-controlled agents
+│   │   ├── config.go      # Config struct
+│   │   └── loader.go      # Load ~/.cami/config.yaml
+│   ├── deploy/            # Agent deployment
+│   │   └── deploy.go      # Deploy agents to projects
+│   ├── docs/              # CLAUDE.md management
+│   │   └── claude.go      # Update deployed agents section
+│   ├── discovery/         # Agent scanning
+│   │   └── discovery.go   # Scan .claude/agents/
+│   ├── cli/               # CLI commands
+│   │   └── commands.go    # CLI command implementations
+│   └── tui/               # Terminal UI
+│       └── tui.go         # Interactive deployment interface
+├── .claude/agents/        # Deployed agents for CAMI development
 ├── reference/             # Technical documentation
-│   ├── mcp-architecture.md
-│   ├── tool-catalog.md
-│   ├── development-guide.md
-│   └── ...
-├── CLI-COMMANDS.md        # CLI reference
-├── MCP_README.md          # MCP server guide
 └── README.md              # This file
 ```
-
-### Architecture
-
-**CLI/TUI Application:**
-- Entry: `cmd/cami/main.go`
-- Mode detection: TUI (no args) vs CLI (with subcommands)
-- Shared internal packages for core logic
-
-**MCP Server:**
-- Entry: `cmd/cami-mcp/main.go`
-- Protocol: Model Context Protocol over stdio
-- Tools: 7 tools (deploy_agents, update_claude_md, list_agents, scan_deployed_agents, add_location, list_locations, remove_location)
-- Integration: Direct usage of internal packages
-
-**Shared Core:**
-- `internal/agent` - YAML frontmatter parsing
-- `internal/deploy` - File operations and conflict detection
-- `internal/docs` - Smart CLAUDE.md merging
-- `internal/discovery` - Version comparison logic
 
 ### Building
 
 ```bash
-# Build CLI/TUI
-go build -o cami cmd/cami/main.go
+# Build single binary
+go build -o cami ./cmd/cami
 
-# Build MCP server
-go build -o cami-mcp cmd/cami-mcp/main.go
-
-# Build both
-make build
+# Install to PATH
+go install ./cmd/cami
 
 # Run tests
 go test ./...
 ```
 
-### Contributing
+### Architecture
 
-See [reference/development-guide.md](reference/development-guide.md) for:
-- Code organization patterns
-- Adding new agents
-- Extending MCP tools
-- Testing guidelines
+**Single Binary, Three Modes:**
+- Entry: `cmd/cami/main.go`
+- Mode detection: `--mcp` flag → MCP server, arguments → CLI, no args → TUI
+- Shared internal packages for core logic
 
-## Roadmap
+**MCP Server:**
+- Protocol: Model Context Protocol over stdio
+- Tools: 12 tools for agent management, source management, and locations
+- Integration: Direct usage of internal packages
 
-### v0.2.0 (Current)
-- ✅ Full CLI interface with location management
-- ✅ MCP server with 7 tools for Claude Code/Desktop integration
-- ✅ Agent discovery and updates (TUI press `i`)
-- ✅ Smart CLAUDE.md documentation updates
-- ✅ JSON output format for programmatic use
-- ✅ 23 specialized agents at v1.1.0
-- ✅ Reference folder documentation pattern
+**Shared Core:**
+- `internal/agent` - YAML frontmatter parsing, .camiignore support
+- `internal/deploy` - File operations and conflict detection
+- `internal/docs` - Smart CLAUDE.md merging
+- `internal/discovery` - Version comparison logic
+- `internal/config` - Global configuration management
 
-### v0.3.0 (Planned)
-- Agent orchestration guidance
-- Deployment history tracking
-- Version rollback capability
-- Agent dependency management
-- Multi-project batch operations
-- Agent usage analytics
+## Documentation
 
-### Future Considerations
-- Web UI dashboard
+- **[README.md](README.md)** - This file, main entry point
+- **[CLAUDE.md](CLAUDE.md)** - Complete MCP tool documentation and workflows
+- **[reference/](reference/)** - Detailed technical documentation
+  - [mcp-first-architecture-plan.md](reference/mcp-first-architecture-plan.md) - Architecture philosophy
+  - [clean-mcp-first-plan.md](reference/clean-mcp-first-plan.md) - Implementation details
+  - [open-source-strategy.md](reference/open-source-strategy.md) - Path to public release
+  - [agent-classification-system-design.md](reference/agent-classification-system-design.md) - Future categorization
+
+## Version
+
+**CAMI v0.3.0** - Current Release
+
+### What's New in v0.3.0
+- ✅ Single binary with dual modes (MCP + CLI/TUI)
+- ✅ 12 MCP tools for complete Claude Code integration
+- ✅ Global agent storage at `~/.cami/sources/`
+- ✅ Priority-based multi-source deduplication
+- ✅ Source management tools (add, update, status)
+- ✅ Location tracking across projects
+- ✅ .camiignore support with glob patterns
+- ✅ 28 specialized agents at v1.1.0+
+- ✅ Comprehensive MCP-first documentation
+
+### Roadmap
+
+**v0.4.0 (Planned)**
+- Agent classification system (3 tiers)
+- Enhanced agent-architect with versioning strategy
+- Remote agent sources (GitHub, Git, HTTP)
+- Multi-workflow support (developers, consumers, teams)
+
+**Future Considerations**
+- Homebrew installation
 - Agent marketplace/sharing
 - Custom agent templates
-- Integration with CI/CD pipelines
-- Agent performance metrics
+- CI/CD pipeline integration
 - Team collaboration features
 
 ## License
 
-Proprietary - Product Team
+MIT License - See [LICENSE](LICENSE) file for details

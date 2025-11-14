@@ -1,6 +1,5 @@
 # Binaries
 cami
-cami-mcp
 *.exe
 *.dll
 *.so

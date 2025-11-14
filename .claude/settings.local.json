@@ -47,7 +47,17 @@
       "Bash(git push)",
       "Bash(./cami scan:*)",
       "Bash(./cami:*)",
-      "Bash(go mod tidy:*)"
+      "Bash(go mod tidy:*)",
+      "Bash(git push:*)",
+      "Bash(timeout 2 ./cami:*)",
+      "mcp__cami__list_sources",
+      "mcp__cami__list_locations",
+      "mcp__cami__source_status",
+      "mcp__cami__onboard",
+      "mcp__cami__add_location",
+      "mcp__cami__remove_location",
+      "mcp__cami__update_source",
+      "mcp__cami__add_source"
     ],
     "deny": [],
     "ask": []

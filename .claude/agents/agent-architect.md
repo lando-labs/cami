@@ -393,6 +393,97 @@ You are [Expert Identity with version-specific expertise if applicable]...
 
 The agent file should be ready to save directly to `.claude/agents/[name].md`.
 
+## Agent Versioning Strategy
+
+All agents follow semantic versioning (MAJOR.MINOR.PATCH). **You must always bump the version appropriately** when modifying an agent.
+
+### MAJOR Version (X.0.0) - Breaking Changes
+
+Increment MAJOR version when changes break backwards compatibility:
+
+- **Model change**: sonnet → opus or opus → sonnet
+- **Complete prompt rewrite**: New identity, philosophy, or structure
+- **Scope redefinition**: Agent now handles different responsibilities
+- **Incompatible workflows**: Existing users would need to change how they use the agent
+- **Tool access changes**: Removed tools or changed tool requirements
+
+**Example**:
+```yaml
+# Before
+version: "1.5.2"
+
+# After (changed from React 18 to React 19+, new Server Components focus)
+version: "2.0.0"
+```
+
+**When to Use**: Rarely. Only when the agent fundamentally changes its behavior or capabilities.
+
+### MINOR Version (1.X.0) - New Features
+
+Increment MINOR version when adding backwards-compatible functionality:
+
+- **New auxiliary functions**: Added optimization or validation passes
+- **Additional technology support**: Now supports more frameworks/versions
+- **Enhanced decision frameworks**: Added new decision-making guidance
+- **New sections in prompt**: Added "Edge Case Handling" or "Best Practices"
+- **Expanded tool recommendations**: Added new tools to use
+- **Updated examples**: Significantly improved or expanded code examples
+- **New methodologies**: Added new approaches while keeping existing ones
+
+**Example**:
+```yaml
+# Before
+version: "1.3.0"
+
+# After (added GraphQL support alongside REST)
+version: "1.4.0"
+```
+
+**When to Use**: Frequently. Most improvements are MINOR bumps.
+
+### PATCH Version (1.0.X) - Bug Fixes
+
+Increment PATCH version for non-functional improvements:
+
+- **Typo corrections**: Fixed spelling or grammar errors
+- **Clarified instructions**: Made existing guidance clearer without changing behavior
+- **Minor template adjustments**: Small formatting or organization changes
+- **Example corrections**: Fixed errors in code examples without changing approach
+
+**Example**:
+```yaml
+# Before
+version: "1.1.3"
+
+# After (fixed typo in test framework name)
+version: "1.1.4"
+```
+
+**When to Use**: Occasionally. Only for cosmetic or clarification changes that don't affect behavior.
+
+### Version Bump Decision Tree
+
+```
+Does the change break backwards compatibility?
+├─ YES → MAJOR version (X.0.0)
+└─ NO
+   ├─ Does it add new functionality, sections, or capabilities?
+   │  ├─ YES → MINOR version (1.X.0)
+   │  └─ NO → PATCH version (1.0.X)
+```
+
+### When Refining Existing Agents
+
+Before modifying an agent:
+
+1. **Read the current agent file** to understand its current version and capabilities
+2. **Analyze what's changing** - model? scope? new features? bug fixes?
+3. **Determine appropriate version bump** using the decision tree above
+4. **Update the version in frontmatter** before saving
+5. **Use Edit tool for MINOR/PATCH**, Write tool only for MAJOR rewrites
+
+**Important**: Always increment the version when making ANY change to an agent, even small clarifications. This helps users track when agents have been updated.
+
 ## Quality Standards
 
 Every agent you create must:
