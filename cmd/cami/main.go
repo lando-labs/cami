@@ -260,7 +260,7 @@ type ListLocationsResponse struct {
 }
 
 type AddSourceArgs struct {
-	URL      string `json:"url" jsonschema_description:"Git URL to clone (e.g. 'git@github.com:lando/lando-agents.git')"`
+	URL      string `json:"url" jsonschema_description:"Git URL to clone (e.g. 'git@github.com:yourorg/your-agents.git')"`
 	Name     string `json:"name,omitempty" jsonschema_description:"Name for the source (derived from URL if not specified)"`
 	Priority int    `json:"priority,omitempty" jsonschema_description:"Priority (higher = higher precedence, default: 100)"`
 }
@@ -942,19 +942,19 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 			responseText = "# Welcome to CAMI! 🚀\n\n"
 			responseText += "CAMI is not yet configured. Let me help you get started!\n\n"
 			responseText += "## First Step: Add Agent Sources\n\n"
-			responseText += "I recommend adding the official Lando agent library which includes 28 specialized agents:\n\n"
-			responseText += "**I can do this for you right now!** Just say:\n"
-			responseText += "  \"Add the official Lando agent library\"\n\n"
+			responseText += "To use CAMI, you need to add an agent source (a Git repository containing agent definitions).\n\n"
+			responseText += "**I can help you add an agent source!** Just tell me:\n"
+			responseText += "  \"Add agent source from <git-url>\"\n\n"
 			responseText += "Or you can do it manually:\n"
-			responseText += "- CLI: `cami source add git@github.com:lando-labs/lando-agents.git`\n"
-			responseText += "- MCP: Use `mcp__cami__add_source` with URL: `git@github.com:lando-labs/lando-agents.git`\n\n"
+			responseText += "- CLI: `cami source add <git-url>`\n"
+			responseText += "- MCP: Use `mcp__cami__add_source` with your Git repository URL\n\n"
 			responseText += "This will:\n"
 			responseText += "1. Create `~/.cami/` directory for global configuration\n"
-			responseText += "2. Clone the agent library to `~/.cami/sources/lando-agents/`\n"
-			responseText += "3. Make 28 professional agents available across all your projects\n\n"
-			responseText += "After that, you can deploy agents to any project with `mcp__cami__deploy_agents`!\n"
+			responseText += "2. Clone the agent repository to `~/.cami/sources/<name>/`\n"
+			responseText += "3. Make agents available across all your projects\n\n"
+			responseText += "After adding a source, you can deploy agents to any project with `mcp__cami__deploy_agents`!\n"
 
-			state.RecommendedNext = "Add the official Lando agent library"
+			state.RecommendedNext = "Add an agent source"
 
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
@@ -996,8 +996,8 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 		responseText += "## Agent Sources\n"
 		if state.SourceCount == 0 {
 			responseText += "⚠️ **No agent sources configured**\n\n"
-			responseText += "**Recommended:** Add the official Lando agent library (29 agents)\n"
-			responseText += "- Use `mcp__cami__add_source` with URL: `git@github.com:lando-labs/lando-agents.git`\n\n"
+			responseText += "**Recommended:** Add an agent source with `mcp__cami__add_source`\n"
+			responseText += "- Provide a Git URL to your agent repository\n\n"
 			state.RecommendedNext = "Add agent sources"
 		} else if state.TotalAgents == 0 {
 			responseText += fmt.Sprintf("✓ %d source(s) configured (but no agents found)\n\n", state.SourceCount)
