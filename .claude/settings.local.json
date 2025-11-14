@@ -57,7 +57,10 @@
       "mcp__cami__add_location",
       "mcp__cami__remove_location",
       "mcp__cami__update_source",
-      "mcp__cami__add_source"
+      "mcp__cami__add_source",
+      "Bash(git check-ignore:*)",
+      "Bash(lando-agents: 100\" to \"my-agents: 200)",
+      "Bash(team-agents: 100\"\n- Updated list_agents example from \"29 agents across 2 sources\" to \"X agents across Y sources\"\n- Removed company-agents from directory structure (simplified to team-agents and my-agents)\n\nCLAUDE.md is now consistent with README and ready for open source where\nusers bring their own agent repositories.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

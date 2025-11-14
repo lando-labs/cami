@@ -142,31 +142,35 @@ agent_sources:
 
 ## MCP Tools Reference
 
-CAMI provides 12 MCP tools for Claude Code to manage agents. These tools enable natural language workflows like "Add the frontend agent to this project" or "What agents do I have?".
+CAMI provides 13 MCP tools for Claude Code to manage agents. These tools enable natural language workflows like "Create a new project" or "What agents do I have?".
+
+### Project Creation
+
+1. **`mcp__cami__create_project`** - Create a new project with directory setup, agent deployment, and CLAUDE.md
 
 ### Core Agent Management
 
-1. **`mcp__cami__list_agents`** - List all available agents from configured sources
-2. **`mcp__cami__deploy_agents`** - Deploy selected agents to a project's `.claude/agents/` directory
-3. **`mcp__cami__scan_deployed_agents`** - Scan a project to see what agents are deployed and their status
-4. **`mcp__cami__update_claude_md`** - Update a project's CLAUDE.md with agent documentation
+2. **`mcp__cami__list_agents`** - List all available agents from configured sources
+3. **`mcp__cami__deploy_agents`** - Deploy selected agents to a project's `.claude/agents/` directory
+4. **`mcp__cami__scan_deployed_agents`** - Scan a project to see what agents are deployed and their status
+5. **`mcp__cami__update_claude_md`** - Update a project's CLAUDE.md with agent documentation
 
 ### Source Management
 
-5. **`mcp__cami__list_sources`** - List all configured agent sources
-6. **`mcp__cami__add_source`** - Add a new agent source by cloning a Git repository
-7. **`mcp__cami__update_source`** - Update agent sources with git pull
-8. **`mcp__cami__source_status`** - Show git status of agent sources
+6. **`mcp__cami__list_sources`** - List all configured agent sources
+7. **`mcp__cami__add_source`** - Add a new agent source by cloning a Git repository
+8. **`mcp__cami__update_source`** - Update agent sources with git pull
+9. **`mcp__cami__source_status`** - Show git status of agent sources
 
 ### Location Management
 
-9. **`mcp__cami__add_location`** - Register a project directory for agent deployment tracking
-10. **`mcp__cami__list_locations`** - List all registered project locations
-11. **`mcp__cami__remove_location`** - Unregister a project directory
+10. **`mcp__cami__add_location`** - Register a project directory for agent deployment tracking
+11. **`mcp__cami__list_locations`** - List all registered project locations
+12. **`mcp__cami__remove_location`** - Unregister a project directory
 
 ### Onboarding
 
-12. **`mcp__cami__onboard`** - Get personalized onboarding guidance based on current setup
+13. **`mcp__cami__onboard`** - Get personalized onboarding guidance based on current setup
 
 Example usage:
 ```
@@ -450,7 +454,8 @@ go test ./...
 
 ### What's New in v0.3.0
 - ✅ Single binary with dual modes (MCP + CLI/TUI)
-- ✅ 12 MCP tools for complete Claude Code integration
+- ✅ 13 MCP tools for complete Claude Code integration
+- ✅ Project creation workflow with create_project tool
 - ✅ Global agent storage at `~/.cami/sources/`
 - ✅ Priority-based multi-source deduplication
 - ✅ Source management tools (add, update, status)

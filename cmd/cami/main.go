@@ -282,6 +282,20 @@ type ListSourcesResponse struct {
 	Sources []SourceInfo `json:"sources"`
 }
 
+type CreateProjectArgs struct {
+	Name         string   `json:"name" jsonschema_description:"Project name (kebab-case for directory)"`
+	Path         string   `json:"path,omitempty" jsonschema_description:"Project directory path (defaults to ~/projects/{name})"`
+	Description  string   `json:"description" jsonschema_description:"High-level project description (2-3 paragraphs)"`
+	AgentNames   []string `json:"agent_names" jsonschema_description:"List of agent names to deploy to the project"`
+	VisionDoc    string   `json:"vision_doc,omitempty" jsonschema_description:"Focused CLAUDE.md content (vision, not implementation details)"`
+}
+
+type CreateProjectResponse struct {
+	ProjectPath    string   `json:"project_path"`
+	AgentsDeployed []string `json:"agents_deployed"`
+	Success        bool     `json:"success"`
+}
+
 type OnboardingState struct {
 	ConfigExists    bool   `json:"config_exists"`
 	SourceCount     int    `json:"source_count"`
@@ -923,6 +937,146 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
 		}, nil, nil
+	})
+
+	// Register create_project tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "create_project",
+		Description: "Create a new project with proper setup. " +
+			"Use this when user wants to start a new project. " +
+			"This tool: 1) Creates project directory, 2) Deploys specified agents, " +
+			"3) Writes focused CLAUDE.md (vision only, not implementation details), " +
+			"4) Registers project location. " +
+			"IMPORTANT: Claude should first help user identify needed agents, then invoke this tool.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args CreateProjectArgs) (*mcp.CallToolResult, any, error) {
+		// Validate project name
+		if args.Name == "" {
+			return nil, nil, fmt.Errorf("project name is required")
+		}
+
+		// Determine project path
+		projectPath := args.Path
+		if projectPath == "" {
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to get home directory: %w", err)
+			}
+			projectPath = filepath.Join(homeDir, "projects", args.Name)
+		}
+
+		// Expand ~ in path if present
+		if strings.HasPrefix(projectPath, "~/") {
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to get home directory: %w", err)
+			}
+			projectPath = filepath.Join(homeDir, projectPath[2:])
+		}
+
+		// Check if directory already exists
+		if _, err := os.Stat(projectPath); err == nil {
+			return nil, nil, fmt.Errorf("project directory already exists: %s", projectPath)
+		}
+
+		// Create project directory
+		if err := os.MkdirAll(projectPath, 0755); err != nil {
+			return nil, nil, fmt.Errorf("failed to create project directory: %w", err)
+		}
+
+		// Deploy agents
+		agentsPath := filepath.Join(projectPath, ".claude", "agents")
+		if err := os.MkdirAll(agentsPath, 0755); err != nil {
+			return nil, nil, fmt.Errorf("failed to create agents directory: %w", err)
+		}
+
+		cfg, err := config.Load()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Convert config sources to agent sources for loading
+		agentSources := make([]agent.AgentSource, len(cfg.AgentSources))
+		for i, src := range cfg.AgentSources {
+			agentSources[i] = agent.AgentSource{
+				Path:     src.Path,
+				Priority: src.Priority,
+			}
+		}
+
+		allAgents, err := agent.LoadAgentsFromSources(agentSources)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load agents: %w", err)
+		}
+
+		// Deploy requested agents
+		deployedAgents := []string{}
+		for _, agentName := range args.AgentNames {
+			var agentToDeploy *agent.Agent
+			for _, a := range allAgents {
+				if a.Name == agentName {
+					agentToDeploy = a
+					break
+				}
+			}
+
+			if agentToDeploy == nil {
+				return nil, nil, fmt.Errorf("agent not found: %s", agentName)
+			}
+
+			targetFile := filepath.Join(agentsPath, agentName+".md")
+			content := agentToDeploy.Content
+			if err := os.WriteFile(targetFile, []byte(content), 0644); err != nil {
+				return nil, nil, fmt.Errorf("failed to deploy agent %s: %w", agentName, err)
+			}
+
+			deployedAgents = append(deployedAgents, agentName)
+		}
+
+		// Write CLAUDE.md if vision doc provided
+		if args.VisionDoc != "" {
+			claudeMdPath := filepath.Join(projectPath, "CLAUDE.md")
+			if err := os.WriteFile(claudeMdPath, []byte(args.VisionDoc), 0644); err != nil {
+				return nil, nil, fmt.Errorf("failed to write CLAUDE.md: %w", err)
+			}
+
+			// Update CLAUDE.md with deployed agents
+			if _, err := docs.UpdateCLAUDEmd(projectPath, "Deployed Agents", false); err != nil {
+				// Don't fail the whole operation if this fails, just warn
+				fmt.Fprintf(os.Stderr, "Warning: failed to update CLAUDE.md with agents: %v\n", err)
+			}
+		}
+
+		// Register project location
+		cfg.Locations = append(cfg.Locations, config.DeployLocation{
+			Name: args.Name,
+			Path: projectPath,
+		})
+
+		if err := cfg.Save(); err != nil {
+			// Don't fail the whole operation, just warn
+			fmt.Fprintf(os.Stderr, "Warning: failed to save location to config: %v\n", err)
+		}
+
+		responseText := fmt.Sprintf("✅ Project Created Successfully!\n\n")
+		responseText += fmt.Sprintf("**Project**: %s\n", args.Name)
+		responseText += fmt.Sprintf("**Location**: %s\n", projectPath)
+		responseText += fmt.Sprintf("**Agents Deployed**: %d\n", len(deployedAgents))
+		responseText += "\n**Deployed Agents:**\n"
+		for _, name := range deployedAgents {
+			responseText += fmt.Sprintf("- %s\n", name)
+		}
+		responseText += "\n**Next Steps:**\n"
+		responseText += fmt.Sprintf("1. Navigate to project: `cd %s`\n", projectPath)
+		responseText += "2. Review CLAUDE.md for project vision\n"
+		responseText += "3. Start building with your specialized agents!\n"
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, &CreateProjectResponse{
+			ProjectPath:    projectPath,
+			AgentsDeployed: deployedAgents,
+			Success:        true,
+		}, nil
 	})
 
 	// Register onboard tool
