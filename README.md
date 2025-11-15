@@ -29,8 +29,6 @@ That's it! CAMI automatically runs via `go run` when you use Claude Code in this
 
 Try it: Ask Claude "Help me get started with CAMI"
 
-See [QUICKSTART.md](QUICKSTART.md) for details.
-
 ### Production Installation
 
 For using CAMI across multiple projects:
