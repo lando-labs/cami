@@ -272,11 +272,11 @@ type ListSourcesResponse struct {
 }
 
 type CreateProjectArgs struct {
-	Name         string   `json:"name" jsonschema_description:"Project name (kebab-case for directory)"`
-	Path         string   `json:"path,omitempty" jsonschema_description:"Project directory path (defaults to ~/projects/{name})"`
-	Description  string   `json:"description" jsonschema_description:"High-level project description (2-3 paragraphs)"`
-	AgentNames   []string `json:"agent_names" jsonschema_description:"List of agent names to deploy to the project"`
-	VisionDoc    string   `json:"vision_doc,omitempty" jsonschema_description:"Focused CLAUDE.md content (vision, not implementation details)"`
+	Name        string   `json:"name" jsonschema_description:"Project name (kebab-case for directory)"`
+	Path        string   `json:"path,omitempty" jsonschema_description:"Project directory path (defaults to ~/projects/{name})"`
+	Description string   `json:"description" jsonschema_description:"High-level project description (2-3 paragraphs)"`
+	AgentNames  []string `json:"agent_names" jsonschema_description:"List of agent names to deploy to the project"`
+	VisionDoc   string   `json:"vision_doc,omitempty" jsonschema_description:"Focused CLAUDE.md content (vision, not implementation details)"`
 }
 
 type CreateProjectResponse struct {
@@ -1074,12 +1074,12 @@ func registerMCPTools(server *mcp.Server) {
 		responseText += "3. Start building with your specialized agents!\n"
 
 		return &mcp.CallToolResult{
-			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-		}, &CreateProjectResponse{
-			ProjectPath:    projectPath,
-			AgentsDeployed: deployedAgents,
-			Success:        true,
-		}, nil
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, &CreateProjectResponse{
+				ProjectPath:    projectPath,
+				AgentsDeployed: deployedAgents,
+				Success:        true,
+			}, nil
 	})
 
 	// Register onboard tool

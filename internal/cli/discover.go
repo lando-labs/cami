@@ -12,9 +12,9 @@ import (
 
 // DiscoverOutput represents the JSON output for discover command
 type DiscoverOutput struct {
-	RootPath string                    `json:"root_path"`
-	Count    int                       `json:"count"`
-	Projects []*discovery.ProjectInfo  `json:"projects"`
+	RootPath string                   `json:"root_path"`
+	Count    int                      `json:"count"`
+	Projects []*discovery.ProjectInfo `json:"projects"`
 }
 
 // NewDiscoverCommand creates the discover subcommand

@@ -11,7 +11,7 @@ import (
 
 func TestGetConfigPath(t *testing.T) {
 	path, err := GetConfigPath()
-	
+
 	require.NoError(t, err)
 	assert.Contains(t, path, ".cami")
 	assert.Contains(t, path, "config.yaml")
@@ -20,12 +20,12 @@ func TestGetConfigPath(t *testing.T) {
 func TestLoadAndSave(t *testing.T) {
 	// Use a temporary directory for config
 	tmpDir := t.TempDir()
-	
+
 	// Override config path for testing
 	originalHome := os.Getenv("HOME")
 	defer os.Setenv("HOME", originalHome)
 	os.Setenv("HOME", tmpDir)
-	
+
 	t.Run("save and load config", func(t *testing.T) {
 		cfg := &Config{
 			Version: "1",
@@ -48,18 +48,18 @@ func TestLoadAndSave(t *testing.T) {
 				},
 			},
 		}
-		
+
 		// Create config directory
 		require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".cami"), 0755))
-		
+
 		// Save
 		err := cfg.Save()
 		require.NoError(t, err)
-		
+
 		// Load
 		loaded, err := Load()
 		require.NoError(t, err)
-		
+
 		// Verify
 		assert.Equal(t, "1", loaded.Version)
 		assert.Len(t, loaded.AgentSources, 1)
@@ -70,18 +70,18 @@ func TestLoadAndSave(t *testing.T) {
 		assert.NotNil(t, loaded.AgentSources[0].Git)
 		assert.True(t, loaded.AgentSources[0].Git.Enabled)
 		assert.Equal(t, "git@github.com:test/repo.git", loaded.AgentSources[0].Git.Remote)
-		
+
 		assert.Len(t, loaded.Locations, 1)
 		assert.Equal(t, "test-project", loaded.Locations[0].Name)
 		assert.Equal(t, "/test/project", loaded.Locations[0].Path)
 	})
-	
+
 	t.Run("load non-existent config creates default", func(t *testing.T) {
 		// Remove config file
 		os.Remove(filepath.Join(tmpDir, ".cami", "config.yaml"))
-		
+
 		cfg, err := Load()
-		
+
 		require.NoError(t, err)
 		assert.NotNil(t, cfg)
 		assert.Equal(t, "1", cfg.Version)
@@ -96,21 +96,21 @@ func TestAddAgentSource(t *testing.T) {
 			Version:      "1",
 			AgentSources: []AgentSource{},
 		}
-		
+
 		source := AgentSource{
 			Name:     "new-source",
 			Type:     "local",
 			Path:     "/new/path",
 			Priority: 150,
 		}
-		
+
 		err := cfg.AddAgentSource(source)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, cfg.AgentSources, 1)
 		assert.Equal(t, "new-source", cfg.AgentSources[0].Name)
 	})
-	
+
 	t.Run("error on duplicate name", func(t *testing.T) {
 		cfg := &Config{
 			Version: "1",
@@ -118,15 +118,15 @@ func TestAddAgentSource(t *testing.T) {
 				{Name: "existing", Path: "/path", Priority: 100},
 			},
 		}
-		
+
 		duplicate := AgentSource{
 			Name:     "existing",
 			Path:     "/other/path",
 			Priority: 200,
 		}
-		
+
 		err := cfg.AddAgentSource(duplicate)
-		
+
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "already exists")
 		assert.Len(t, cfg.AgentSources, 1) // Should not be added
@@ -143,15 +143,15 @@ func TestRemoveAgentSource(t *testing.T) {
 				{Name: "source3", Path: "/path3", Priority: 200},
 			},
 		}
-		
+
 		err := cfg.RemoveAgentSource("source2")
-		
+
 		require.NoError(t, err)
 		assert.Len(t, cfg.AgentSources, 2)
 		assert.Equal(t, "source1", cfg.AgentSources[0].Name)
 		assert.Equal(t, "source3", cfg.AgentSources[1].Name)
 	})
-	
+
 	t.Run("error when source not found", func(t *testing.T) {
 		cfg := &Config{
 			Version: "1",
@@ -159,9 +159,9 @@ func TestRemoveAgentSource(t *testing.T) {
 				{Name: "source1", Path: "/path1", Priority: 100},
 			},
 		}
-		
+
 		err := cfg.RemoveAgentSource("nonexistent")
-		
+
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 		assert.Len(t, cfg.AgentSources, 1) // Should not be removed
@@ -176,19 +176,19 @@ func TestGetAgentSource(t *testing.T) {
 			{Name: "source2", Path: "/path2", Priority: 150},
 		},
 	}
-	
+
 	t.Run("get existing source", func(t *testing.T) {
 		source, err := cfg.GetAgentSource("source2")
-		
+
 		require.NoError(t, err)
 		assert.Equal(t, "source2", source.Name)
 		assert.Equal(t, "/path2", source.Path)
 		assert.Equal(t, 150, source.Priority)
 	})
-	
+
 	t.Run("error when not found", func(t *testing.T) {
 		_, err := cfg.GetAgentSource("nonexistent")
-		
+
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 	})
@@ -197,45 +197,45 @@ func TestGetAgentSource(t *testing.T) {
 func TestAddDeployLocation(t *testing.T) {
 	t.Run("add new location", func(t *testing.T) {
 		tmpDir := t.TempDir() // Create real directory
-		
+
 		cfg := &Config{
 			Version:   "1",
 			Locations: []DeployLocation{},
 		}
-		
+
 		err := cfg.AddDeployLocation("project1", tmpDir)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, cfg.Locations, 1)
 		assert.Equal(t, "project1", cfg.Locations[0].Name)
 		assert.Equal(t, tmpDir, cfg.Locations[0].Path)
 	})
-	
+
 	t.Run("error on duplicate name", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		cfg := &Config{
 			Version: "1",
 			Locations: []DeployLocation{
 				{Name: "existing", Path: tmpDir},
 			},
 		}
-		
+
 		err := cfg.AddDeployLocation("existing", tmpDir)
-		
+
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "already exists")
 		assert.Len(t, cfg.Locations, 1)
 	})
-	
+
 	t.Run("error when path does not exist", func(t *testing.T) {
 		cfg := &Config{
 			Version:   "1",
 			Locations: []DeployLocation{},
 		}
-		
+
 		err := cfg.AddDeployLocation("bad", "/nonexistent/path")
-		
+
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "does not exist")
 	})
@@ -251,15 +251,15 @@ func TestRemoveDeployLocationByName(t *testing.T) {
 				{Name: "loc3", Path: "/path3"},
 			},
 		}
-		
+
 		err := cfg.RemoveDeployLocationByName("loc2")
-		
+
 		require.NoError(t, err)
 		assert.Len(t, cfg.Locations, 2)
 		assert.Equal(t, "loc1", cfg.Locations[0].Name)
 		assert.Equal(t, "loc3", cfg.Locations[1].Name)
 	})
-	
+
 	t.Run("error when not found", func(t *testing.T) {
 		cfg := &Config{
 			Version: "1",
@@ -267,9 +267,9 @@ func TestRemoveDeployLocationByName(t *testing.T) {
 				{Name: "loc1", Path: "/path1"},
 			},
 		}
-		
+
 		err := cfg.RemoveDeployLocationByName("nonexistent")
-		
+
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not found")
 		assert.Len(t, cfg.Locations, 1)
@@ -285,14 +285,14 @@ func TestRemoveDeployLocation(t *testing.T) {
 				{Name: "loc2", Path: "/path2"},
 			},
 		}
-		
+
 		err := cfg.RemoveDeployLocation(0)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, cfg.Locations, 1)
 		assert.Equal(t, "loc2", cfg.Locations[0].Name)
 	})
-	
+
 	t.Run("error on invalid index", func(t *testing.T) {
 		cfg := &Config{
 			Version: "1",
@@ -300,9 +300,9 @@ func TestRemoveDeployLocation(t *testing.T) {
 				{Name: "loc1", Path: "/path1"},
 			},
 		}
-		
+
 		err := cfg.RemoveDeployLocation(5)
-		
+
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid index")
 	})

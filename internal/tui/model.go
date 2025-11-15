@@ -25,33 +25,33 @@ const (
 
 // Model represents the TUI state
 type Model struct {
-	state           ViewState
-	agents          []*agent.Agent
-	selectedAgents  map[int]bool
-	config          *config.Config
-	deployLocation  *config.DeployLocation
-	deployResults   []*deploy.Result
-	width           int
-	height          int
-	cursor          int
-	viewportOffset  int // For scrolling the agent list
-	message         string
-	err             error
+	state          ViewState
+	agents         []*agent.Agent
+	selectedAgents map[int]bool
+	config         *config.Config
+	deployLocation *config.DeployLocation
+	deployResults  []*deploy.Result
+	width          int
+	height         int
+	cursor         int
+	viewportOffset int // For scrolling the agent list
+	message        string
+	err            error
 
 	// Location management
-	locationCursor       int
+	locationCursor         int
 	locationViewportOffset int // For scrolling the location list
-	addingLocation       bool
-	newLocationName      string
-	newLocationPath      string
-	inputField           int // 0 = name, 1 = path
+	addingLocation         bool
+	newLocationName        string
+	newLocationPath        string
+	inputField             int // 0 = name, 1 = path
 
 	// Discovery
-	discoveryResult       *discovery.DiscoveryResult
-	discoveryLocationIdx  int
-	discoveryAgentIdx     int
+	discoveryResult         *discovery.DiscoveryResult
+	discoveryLocationIdx    int
+	discoveryAgentIdx       int
 	discoveryViewportOffset int // For scrolling the discovery agent list
-	discoveryLoading      bool
+	discoveryLoading        bool
 }
 
 // scanCompleteMsg is sent when discovery scan completes
@@ -62,14 +62,14 @@ type scanCompleteMsg struct {
 
 // keyMap defines keyboard shortcuts
 type keyMap struct {
-	Up       key.Binding
-	Down     key.Binding
-	Select   key.Binding
-	Deploy   key.Binding
+	Up        key.Binding
+	Down      key.Binding
+	Select    key.Binding
+	Deploy    key.Binding
 	Locations key.Binding
-	Quit     key.Binding
-	Back     key.Binding
-	Help     key.Binding
+	Quit      key.Binding
+	Back      key.Binding
+	Help      key.Binding
 }
 
 var keys = keyMap{
@@ -110,35 +110,35 @@ var keys = keyMap{
 // Styles
 var (
 	titleStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("63")).
-		MarginBottom(1)
+			Bold(true).
+			Foreground(lipgloss.Color("63")).
+			MarginBottom(1)
 
 	selectedStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("170")).
-		Bold(true)
+			Foreground(lipgloss.Color("170")).
+			Bold(true)
 
 	checkboxStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42"))
+			Foreground(lipgloss.Color("42"))
 
 	versionStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240"))
+			Foreground(lipgloss.Color("240"))
 
 	helpStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
-		MarginTop(1)
+			Foreground(lipgloss.Color("241")).
+			MarginTop(1)
 
 	errorStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("196")).
-		Bold(true)
+			Foreground(lipgloss.Color("196")).
+			Bold(true)
 
 	successStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42")).
-		Bold(true)
+			Foreground(lipgloss.Color("42")).
+			Bold(true)
 
 	warningStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("214")).
-		Bold(true)
+			Foreground(lipgloss.Color("214")).
+			Bold(true)
 )
 
 // NewModel creates a new TUI model

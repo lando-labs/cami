@@ -26,9 +26,9 @@ func (m Model) viewAgentSelection() string {
 
 	// Group agents by category for display
 	type displayItem struct {
-		isCategory  bool
+		isCategory   bool
 		categoryName string
-		agentIdx    int
+		agentIdx     int
 	}
 
 	var displayItems []displayItem
@@ -55,7 +55,7 @@ func (m Model) viewAgentSelection() string {
 				displayCategory = "Uncategorized"
 			}
 			displayItems = append(displayItems, displayItem{
-				isCategory:  true,
+				isCategory:   true,
 				categoryName: displayCategory,
 			})
 
@@ -498,4 +498,3 @@ func (m Model) viewDiscovery() string {
 
 	return b.String()
 }
-

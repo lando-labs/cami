@@ -15,26 +15,26 @@ import (
 type DeploymentStatus string
 
 const (
-	StatusUpToDate      DeploymentStatus = "up-to-date"
+	StatusUpToDate        DeploymentStatus = "up-to-date"
 	StatusUpdateAvailable DeploymentStatus = "update-available"
-	StatusNotDeployed   DeploymentStatus = "not-deployed"
-	StatusUnknown       DeploymentStatus = "unknown"
+	StatusNotDeployed     DeploymentStatus = "not-deployed"
+	StatusUnknown         DeploymentStatus = "unknown"
 )
 
 // AgentStatus represents an agent's deployment status at a location
 type AgentStatus struct {
-	Agent          *agent.Agent
-	DeployedVersion string
+	Agent            *agent.Agent
+	DeployedVersion  string
 	AvailableVersion string
-	Status         DeploymentStatus
-	Location       *config.DeployLocation
+	Status           DeploymentStatus
+	Location         *config.DeployLocation
 }
 
 // LocationStatus represents all agent statuses for a single location
 type LocationStatus struct {
-	Location     *config.DeployLocation
+	Location      *config.DeployLocation
 	AgentStatuses []*AgentStatus
-	LastScanned  time.Time
+	LastScanned   time.Time
 }
 
 // DiscoveryResult contains all discovered agent statuses across locations

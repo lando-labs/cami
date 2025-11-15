@@ -11,8 +11,8 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	Version      string          `yaml:"version"`
-	AgentSources []AgentSource   `yaml:"agent_sources"`
+	Version      string           `yaml:"version"`
+	AgentSources []AgentSource    `yaml:"agent_sources"`
 	Locations    []DeployLocation `yaml:"deploy_locations"`
 }
 

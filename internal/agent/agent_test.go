@@ -12,7 +12,7 @@ import (
 // Test helper to create a temporary agent file
 func createTestAgent(t *testing.T, dir, name, version, description, content string) string {
 	t.Helper()
-	
+
 	agentContent := "---\n"
 	agentContent += "name: " + name + "\n"
 	agentContent += "version: " + version + "\n"
@@ -23,7 +23,7 @@ func createTestAgent(t *testing.T, dir, name, version, description, content stri
 	filePath := filepath.Join(dir, name+".md")
 	err := os.WriteFile(filePath, []byte(agentContent), 0644)
 	require.NoError(t, err)
-	
+
 	return filePath
 }
 
@@ -33,7 +33,7 @@ func TestLoadAgent(t *testing.T) {
 		filePath := createTestAgent(t, tmpDir, "test-agent", "1.0.0", "Test agent", "# Test Content")
 
 		agent, err := LoadAgent(filePath)
-		
+
 		require.NoError(t, err)
 		assert.Equal(t, "test-agent", agent.Name)
 		assert.Equal(t, "1.0.0", agent.Version)
@@ -45,7 +45,7 @@ func TestLoadAgent(t *testing.T) {
 	t.Run("missing frontmatter delimiter", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		filePath := filepath.Join(tmpDir, "bad.md")
-		
+
 		err := os.WriteFile(filePath, []byte("no frontmatter here"), 0644)
 		require.NoError(t, err)
 
@@ -57,7 +57,7 @@ func TestLoadAgent(t *testing.T) {
 	t.Run("empty file", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		filePath := filepath.Join(tmpDir, "empty.md")
-		
+
 		err := os.WriteFile(filePath, []byte(""), 0644)
 		require.NoError(t, err)
 
@@ -69,7 +69,7 @@ func TestLoadAgent(t *testing.T) {
 	t.Run("invalid yaml frontmatter", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		filePath := filepath.Join(tmpDir, "bad-yaml.md")
-		
+
 		content := "---\ninvalid: yaml: content:\n---\n"
 		err := os.WriteFile(filePath, []byte(content), 0644)
 		require.NoError(t, err)
@@ -88,16 +88,16 @@ func TestLoadAgent(t *testing.T) {
 func TestLoadAgents(t *testing.T) {
 	t.Run("load multiple agents", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		createTestAgent(t, tmpDir, "agent1", "1.0.0", "First agent", "Content 1")
 		createTestAgent(t, tmpDir, "agent2", "2.0.0", "Second agent", "Content 2")
 		createTestAgent(t, tmpDir, "agent3", "3.0.0", "Third agent", "Content 3")
 
 		agents, err := LoadAgents(tmpDir)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, agents, 3)
-		
+
 		// Verify all agents loaded
 		names := make(map[string]bool)
 		for _, agent := range agents {
@@ -110,20 +110,20 @@ func TestLoadAgents(t *testing.T) {
 
 	t.Run("load agents from nested directories", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		coreDir := filepath.Join(tmpDir, "core")
 		specializedDir := filepath.Join(tmpDir, "specialized")
 		require.NoError(t, os.MkdirAll(coreDir, 0755))
 		require.NoError(t, os.MkdirAll(specializedDir, 0755))
-		
+
 		createTestAgent(t, coreDir, "core-agent", "1.0.0", "Core", "Core content")
 		createTestAgent(t, specializedDir, "specialized-agent", "1.0.0", "Specialized", "Specialized content")
 
 		agents, err := LoadAgents(tmpDir)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, agents, 2)
-		
+
 		// Verify categories are extracted
 		for _, agent := range agents {
 			if agent.Name == "core-agent" {
@@ -136,15 +136,15 @@ func TestLoadAgents(t *testing.T) {
 
 	t.Run("skip non-markdown files", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		
+
 		createTestAgent(t, tmpDir, "valid", "1.0.0", "Valid", "Content")
-		
+
 		// Create non-markdown files
 		os.WriteFile(filepath.Join(tmpDir, "README.txt"), []byte("readme"), 0644)
 		os.WriteFile(filepath.Join(tmpDir, "data.json"), []byte("{}"), 0644)
 
 		agents, err := LoadAgents(tmpDir)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, agents, 1)
 		assert.Equal(t, "valid", agents[0].Name)
@@ -154,7 +154,7 @@ func TestLoadAgents(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		agents, err := LoadAgents(tmpDir)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, agents, 0)
 	})
@@ -169,7 +169,7 @@ func TestLoadAgentsFromSources(t *testing.T) {
 	t.Run("load from multiple sources", func(t *testing.T) {
 		source1 := t.TempDir()
 		source2 := t.TempDir()
-		
+
 		createTestAgent(t, source1, "agent1", "1.0.0", "From source 1", "Content 1")
 		createTestAgent(t, source2, "agent2", "2.0.0", "From source 2", "Content 2")
 
@@ -179,7 +179,7 @@ func TestLoadAgentsFromSources(t *testing.T) {
 		}
 
 		agents, err := LoadAgentsFromSources(sources)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, agents, 2)
 	})
@@ -187,7 +187,7 @@ func TestLoadAgentsFromSources(t *testing.T) {
 	t.Run("priority deduplication", func(t *testing.T) {
 		source1 := t.TempDir()
 		source2 := t.TempDir()
-		
+
 		// Same agent name, different versions and priorities
 		createTestAgent(t, source1, "frontend", "1.0.0", "Low priority", "Old version")
 		createTestAgent(t, source2, "frontend", "2.0.0", "High priority", "New version")
@@ -198,10 +198,10 @@ func TestLoadAgentsFromSources(t *testing.T) {
 		}
 
 		agents, err := LoadAgentsFromSources(sources)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, agents, 1)
-		
+
 		// Should get the higher priority version
 		assert.Equal(t, "frontend", agents[0].Name)
 		assert.Equal(t, "2.0.0", agents[0].Version)
@@ -218,7 +218,7 @@ func TestLoadAgentsFromSources(t *testing.T) {
 		}
 
 		agents, err := LoadAgentsFromSources(sources)
-		
+
 		// Should still succeed with valid source
 		require.NoError(t, err)
 		assert.Len(t, agents, 1)
@@ -229,7 +229,7 @@ func TestLoadAgentsFromSources(t *testing.T) {
 		sources := []AgentSource{}
 
 		agents, err := LoadAgentsFromSources(sources)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, agents, 0)
 	})

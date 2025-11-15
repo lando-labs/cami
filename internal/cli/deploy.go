@@ -14,11 +14,11 @@ import (
 
 // DeployOutput represents the JSON output format for deploy command
 type DeployOutput struct {
-	Success  bool           `json:"success"`
-	Deployed []string       `json:"deployed"`
-	Failed   []string       `json:"failed"`
-	Conflicts []string      `json:"conflicts"`
-	Results  []ResultItem   `json:"results"`
+	Success   bool         `json:"success"`
+	Deployed  []string     `json:"deployed"`
+	Failed    []string     `json:"failed"`
+	Conflicts []string     `json:"conflicts"`
+	Results   []ResultItem `json:"results"`
 }
 
 // ResultItem represents a single deployment result
@@ -31,9 +31,9 @@ type ResultItem struct {
 // NewDeployCommand creates the deploy subcommand
 func NewDeployCommand(vcAgentsDir string) *cobra.Command {
 	var (
-		agentNames string
-		location   string
-		overwrite  bool
+		agentNames   string
+		location     string
+		overwrite    bool
 		outputFormat string
 	)
 
@@ -140,16 +140,16 @@ func runDeploy(vcAgentsDir, agentNames, location string, overwrite bool, outputF
 
 	// Process results
 	output := DeployOutput{
-		Success: true,
-		Deployed: []string{},
-		Failed: []string{},
+		Success:   true,
+		Deployed:  []string{},
+		Failed:    []string{},
 		Conflicts: []string{},
-		Results: []ResultItem{},
+		Results:   []ResultItem{},
 	}
 
 	for _, result := range results {
 		item := ResultItem{
-			Agent: result.Agent.Name,
+			Agent:   result.Agent.Name,
 			Message: result.Message,
 		}
 
