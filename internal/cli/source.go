@@ -47,7 +47,7 @@ The repository will be cloned to vc-agents/<name>/ and added to your configurati
 
 Examples:
   cami source add git@github.com:company/agents.git
-  cami source add https://github.com:lando-labs/lando-agents.git --name official
+  cami source add git@github.com:yourorg/team-agents.git --name official
   cami source add git@github.com:company/agents.git --priority 150`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
