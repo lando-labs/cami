@@ -251,7 +251,7 @@ type ListLocationsResponse struct {
 type AddSourceArgs struct {
 	URL      string `json:"url" jsonschema_description:"Git URL to clone (e.g. 'git@github.com:yourorg/your-agents.git')"`
 	Name     string `json:"name,omitempty" jsonschema_description:"Name for the source (derived from URL if not specified)"`
-	Priority int    `json:"priority,omitempty" jsonschema_description:"Priority (higher = higher precedence, default: 100)"`
+	Priority int    `json:"priority,omitempty" jsonschema_description:"Priority (lower = higher precedence, 1 = highest, default: 50)"`
 }
 
 type UpdateSourceArgs struct {
@@ -759,7 +759,7 @@ func registerMCPTools(server *mcp.Server) {
 
 		priority := args.Priority
 		if priority == 0 {
-			priority = 100
+			priority = 50 // Default: middle priority
 		}
 
 		cfg, err := config.Load()

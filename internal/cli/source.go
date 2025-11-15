@@ -20,8 +20,8 @@ func NewSourceCommand() *cobra.Command {
 		Long: `Manage agent sources (remote repositories or local directories).
 
 Agent sources are where CAMI discovers agents. You can have multiple sources
-with different priorities. Higher priority sources override lower priority ones
-when agent names conflict.`,
+with different priorities. Lower priority numbers override higher ones
+when agent names conflict (1 = highest priority, 100 = lowest).`,
 	}
 
 	cmd.AddCommand(NewSourceAddCommand())
@@ -47,8 +47,8 @@ The repository will be cloned to vc-agents/<name>/ and added to your configurati
 
 Examples:
   cami source add git@github.com:company/agents.git
-  cami source add git@github.com:yourorg/team-agents.git --name official
-  cami source add git@github.com:company/agents.git --priority 150`,
+  cami source add git@github.com:yourorg/team-agents.git --name official --priority 10
+  cami source add git@github.com:mycompany/custom-agents.git --priority 50`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			url := args[0]
@@ -58,9 +58,9 @@ Examples:
 				name = deriveNameFromURL(url)
 			}
 
-			// Default priority for remote sources
+			// Default priority for remote sources (50 = middle priority)
 			if priority == 0 {
-				priority = 100
+				priority = 50
 			}
 
 			return SourceAddCommand(url, name, priority)
@@ -68,7 +68,7 @@ Examples:
 	}
 
 	cmd.Flags().StringVarP(&name, "name", "n", "", "Name for the source (derived from URL if not specified)")
-	cmd.Flags().IntVarP(&priority, "priority", "p", 0, "Priority (higher = higher precedence, default: 100)")
+	cmd.Flags().IntVarP(&priority, "priority", "p", 0, "Priority (lower = higher precedence, default: 50)")
 
 	return cmd
 }

@@ -75,7 +75,7 @@ agent_sources:
   - name: team-agents
     type: local
     path: ~/.cami/sources/team-agents
-    priority: 100
+    priority: 50
     git:
       enabled: true
       remote: git@github.com:yourorg/team-agents.git
@@ -83,7 +83,7 @@ agent_sources:
   - name: my-agents
     type: local
     path: ~/.cami/sources/my-agents
-    priority: 200
+    priority: 10
     git:
       enabled: false
 
@@ -94,7 +94,7 @@ deploy_locations:
     path: /Users/lando/clients/acme-app
 ```
 
-**Priority-based deduplication**: When the same agent exists in multiple sources, the highest priority source wins (my-agents: 200 > team-agents: 100).
+**Priority-based deduplication**: When the same agent exists in multiple sources, the lowest priority number wins (my-agents: 10 > team-agents: 50). Priority 1 = highest, 100 = lowest.
 
 ## MCP Server Configuration
 
@@ -237,7 +237,7 @@ Claude: *uses mcp__cami__list_sources*
 **Parameters**:
 - `url` (string, required) - Git URL (SSH or HTTPS)
 - `name` (string, optional) - Source name (defaults to repo name)
-- `priority` (number, optional) - Priority for deduplication (default: 100)
+- `priority` (number, optional) - Priority for deduplication (lower = higher priority, default: 50)
 
 **Behavior**:
 - Clones repository to `~/.cami/sources/<name>/`
@@ -467,17 +467,17 @@ When the same agent exists in multiple sources, CAMI uses priority-based dedupli
 
 ```yaml
 agent_sources:
-  - name: lando-agents
-    priority: 100        # Official agents (lower priority)
+  - name: official-agents
+    priority: 100        # Official agents (lowest priority)
 
   - name: company-agents
-    priority: 150        # Company-specific (medium priority)
+    priority: 50         # Company-specific (medium priority)
 
   - name: my-agents
-    priority: 200        # Personal overrides (highest priority)
+    priority: 10         # Personal overrides (highest priority)
 ```
 
-**Example**: If "frontend" agent exists in all three sources, the version from `my-agents` (priority 200) is used.
+**Example**: If "frontend" agent exists in all three sources, the version from `my-agents` (priority 10) is used because lower numbers = higher priority.
 
 ### Agent Versioning
 

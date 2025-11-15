@@ -39,9 +39,9 @@ type AgentSource struct {
 }
 
 // LoadAgentsFromSources loads agents from multiple sources with priority-based deduplication
-// Higher priority sources override lower priority sources when agent names conflict
+// Lower priority numbers override higher priority numbers when agent names conflict (1 = highest priority)
 func LoadAgentsFromSources(sources []AgentSource) ([]*Agent, error) {
-	// Map to track highest priority agent for each name
+	// Map to track highest priority (lowest number) agent for each name
 	agentMap := make(map[string]*Agent)
 	priorityMap := make(map[string]int)
 
@@ -58,8 +58,8 @@ func LoadAgentsFromSources(sources []AgentSource) ([]*Agent, error) {
 		for _, agent := range agents {
 			existingPriority, exists := priorityMap[agent.Name]
 
-			// Add or replace agent based on priority
-			if !exists || source.Priority > existingPriority {
+			// Add or replace agent based on priority (lower number = higher priority)
+			if !exists || source.Priority < existingPriority {
 				agentMap[agent.Name] = agent
 				priorityMap[agent.Name] = source.Priority
 			}
