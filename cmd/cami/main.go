@@ -89,47 +89,38 @@ func printHelp() {
 	fmt.Println("For more information, see: README.md")
 }
 
-func getVCAgentsDir() (string, error) {
-	// Try to load from config first
+// loadAllAgents loads agents from all configured sources
+func loadAllAgents() ([]*agent.Agent, error) {
 	cfg, err := config.Load()
-	if err == nil && len(cfg.AgentSources) > 0 {
-		// Use the first source as the primary directory
-		// In the future, this will be replaced entirely with config-based loading
-		return cfg.AgentSources[0].Path, nil
-	}
-
-	// Fallback to old vc-agents detection for backward compatibility
-	execPath, err := os.Executable()
 	if err != nil {
-		return "", fmt.Errorf("error getting executable path: %v", err)
+		return nil, fmt.Errorf("failed to load config: %w - run 'cami source add <git-url>' to add agent sources", err)
 	}
 
-	// Try working directory first
-	wd, _ := os.Getwd()
-	vcAgentsPath := filepath.Join(wd, "vc-agents")
-	if _, err := os.Stat(vcAgentsPath); err == nil {
-		return vcAgentsPath, nil
+	if len(cfg.AgentSources) == 0 {
+		return nil, fmt.Errorf("no agent sources configured - run 'cami source add <git-url>' to add agent sources")
 	}
 
-	// Try relative to executable
-	execDir := filepath.Dir(execPath)
-	vcAgentsPath = filepath.Join(execDir, "vc-agents")
-	if _, err := os.Stat(vcAgentsPath); err == nil {
-		return vcAgentsPath, nil
+	// Convert config sources to agent sources
+	agentSources := make([]agent.AgentSource, len(cfg.AgentSources))
+	for i, src := range cfg.AgentSources {
+		agentSources[i] = agent.AgentSource{
+			Path:     src.Path,
+			Priority: src.Priority,
+		}
 	}
 
-	return "", fmt.Errorf("no agent sources found - configure ~/.cami/config.yaml or use 'cami source add <git-url>'")
+	return agent.LoadAgentsFromSources(agentSources)
 }
 
-func runTUI(vcAgentsDir string) error {
-	// Load agents
-	agents, err := agent.LoadAgents(vcAgentsDir)
+func runTUI() error {
+	// Load agents from all configured sources
+	agents, err := loadAllAgents()
 	if err != nil {
 		return fmt.Errorf("error loading agents: %v", err)
 	}
 
 	if len(agents) == 0 {
-		return fmt.Errorf("no agents found in %s", vcAgentsDir)
+		return fmt.Errorf("no agents found - check your configured agent sources")
 	}
 
 	// Load configuration
@@ -163,20 +154,18 @@ func runCLI() {
 		}
 	}
 
-	// Get vc-agents directory
-	vcAgentsDir, err := getVCAgentsDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		fmt.Fprintf(os.Stderr, "Please ensure CAMI is properly configured.\n")
-		os.Exit(1)
+	// Create root command (legacy CLI - kept for backward compatibility)
+	// TODO: Refactor CLI commands to use config-based loading
+	cfg, err := config.Load()
+	var vcAgentsDir string
+	if err == nil && len(cfg.AgentSources) > 0 {
+		vcAgentsDir = cfg.AgentSources[0].Path
 	}
-
-	// Create root command
 	rootCmd := cli.NewRootCommand(vcAgentsDir)
 
 	// If no arguments, run TUI
 	if len(os.Args) == 1 {
-		if err := runTUI(vcAgentsDir); err != nil {
+		if err := runTUI(); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
@@ -315,13 +304,14 @@ func runMCPServer() {
 	log.SetOutput(os.Stderr)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	// Get vc-agents directory
-	vcAgentsDir, err := getVCAgentsDir()
+	// Check if config exists
+	cfg, err := config.Load()
 	if err != nil {
-		log.Printf("Warning: No agent sources found - some tools may not work until configured")
-		vcAgentsDir = "" // Continue anyway, onboard tool will guide setup
+		log.Printf("Warning: No config found - some tools may not work until configured")
+	} else if len(cfg.AgentSources) == 0 {
+		log.Printf("Warning: No agent sources configured - some tools may not work until configured")
 	} else {
-		log.Printf("Using vc-agents directory: %s", vcAgentsDir)
+		log.Printf("Loaded config with %d agent source(s)", len(cfg.AgentSources))
 	}
 
 	// Create MCP server
@@ -331,7 +321,7 @@ func runMCPServer() {
 	}, nil)
 
 	// Register all MCP tools
-	registerMCPTools(server, vcAgentsDir)
+	registerMCPTools(server)
 
 	// Start server with stdio transport
 	log.Printf("Starting CAMI MCP server v%s", serverVersion)
@@ -340,9 +330,8 @@ func runMCPServer() {
 	}
 }
 
-func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
-	// Continuation of MCP tool registration in next message due to length...
-	// This is a comprehensive merge of cmd/cami-mcp/main.go
+func registerMCPTools(server *mcp.Server) {
+	// MCP tool registration - uses config-based loading for all agent operations
 
 	// Register deploy_agents tool
 	mcp.AddTool(server, &mcp.Tool{
@@ -356,8 +345,8 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 			return nil, nil, fmt.Errorf("invalid target path: %w", err)
 		}
 
-		// Load all available agents
-		allAgents, err := agent.LoadAgents(vcAgentsDir)
+		// Load all available agents from configured sources
+		allAgents, err := loadAllAgents()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to load agents: %w", err)
 		}
@@ -460,8 +449,8 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 			"Returns agent names, versions, descriptions, and categories. " +
 			"Use this to discover what agents are available for deployment.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
-		// Load all available agents
-		agents, err := agent.LoadAgents(vcAgentsDir)
+		// Load all available agents from configured sources
+		agents, err := loadAllAgents()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to load agents: %w", err)
 		}
@@ -529,7 +518,7 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 			return nil, nil, fmt.Errorf("invalid target path: %w", err)
 		}
 
-		availableAgents, err := agent.LoadAgents(vcAgentsDir)
+		availableAgents, err := loadAllAgents()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to load agents: %w", err)
 		}
@@ -784,7 +773,16 @@ func registerMCPTools(server *mcp.Server, vcAgentsDir string) {
 			}
 		}
 
-		targetPath := filepath.Join(vcAgentsDir, name)
+		// Determine target path: ~/.cami/sources/<name>
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get home directory: %w", err)
+		}
+		sourcesDir := filepath.Join(homeDir, ".cami", "sources")
+		if err := os.MkdirAll(sourcesDir, 0755); err != nil {
+			return nil, nil, fmt.Errorf("failed to create sources directory: %w", err)
+		}
+		targetPath := filepath.Join(sourcesDir, name)
 
 		if _, err := os.Stat(targetPath); err == nil {
 			return nil, nil, fmt.Errorf("directory already exists: %s", targetPath)
