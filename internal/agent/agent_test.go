@@ -189,12 +189,12 @@ func TestLoadAgentsFromSources(t *testing.T) {
 		source2 := t.TempDir()
 
 		// Same agent name, different versions and priorities
-		createTestAgent(t, source1, "frontend", "1.0.0", "Low priority", "Old version")
-		createTestAgent(t, source2, "frontend", "2.0.0", "High priority", "New version")
+		createTestAgent(t, source1, "frontend", "1.0.0", "High priority", "New version")
+		createTestAgent(t, source2, "frontend", "2.0.0", "Low priority", "Old version")
 
 		sources := []AgentSource{
-			{Path: source1, Priority: 100},
-			{Path: source2, Priority: 200}, // Higher priority
+			{Path: source1, Priority: 10},  // Lower number = higher priority
+			{Path: source2, Priority: 100}, // Higher number = lower priority
 		}
 
 		agents, err := LoadAgentsFromSources(sources)
@@ -202,9 +202,9 @@ func TestLoadAgentsFromSources(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, agents, 1)
 
-		// Should get the higher priority version
+		// Should get the higher priority version (lower priority number)
 		assert.Equal(t, "frontend", agents[0].Name)
-		assert.Equal(t, "2.0.0", agents[0].Version)
+		assert.Equal(t, "1.0.0", agents[0].Version)
 		assert.Equal(t, "High priority", agents[0].Description)
 	})
 
@@ -214,7 +214,7 @@ func TestLoadAgentsFromSources(t *testing.T) {
 
 		sources := []AgentSource{
 			{Path: "/nonexistent/path", Priority: 100},
-			{Path: validSource, Priority: 200},
+			{Path: validSource, Priority: 50},
 		}
 
 		agents, err := LoadAgentsFromSources(sources)

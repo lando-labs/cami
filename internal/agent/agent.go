@@ -197,7 +197,7 @@ func LoadAgents(vcAgentsDir string) ([]*Agent, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to walk vc-agents directory: %w", err)
+		return nil, fmt.Errorf("failed to walk agent source directory: %w", err)
 	}
 
 	return agents, nil
