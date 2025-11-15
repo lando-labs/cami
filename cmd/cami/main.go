@@ -941,11 +941,16 @@ func registerMCPTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "create_project",
 		Description: "Create a new project with proper setup. " +
-			"Use this when user wants to start a new project. " +
-			"This tool: 1) Creates project directory, 2) Deploys specified agents, " +
-			"3) Writes focused CLAUDE.md (vision only, not implementation details), " +
-			"4) Registers project location. " +
-			"IMPORTANT: Claude should first help user identify needed agents, then invoke this tool.",
+			"WHEN TO USE: User says 'I want to create/start a new project' or similar. " +
+			"WORKFLOW (FOLLOW THIS ORDER): " +
+			"1) Use AskUserQuestion to gather: project name, description, tech stack, key features " +
+			"2) Use mcp__cami__list_agents to see available agents " +
+			"3) Recommend agents based on requirements and get user confirmation " +
+			"4) If agents don't exist, use Task tool to invoke agent-architect (parallel if multiple) " +
+			"5) Write a focused vision_doc (200-300 words, vision NOT implementation) " +
+			"6) Invoke this tool with name, description, agent_names, and vision_doc " +
+			"7) Confirm success and guide user to next steps. " +
+			"IMPORTANT: NEVER skip steps 1-3. Always gather requirements and confirm agents BEFORE using this tool.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args CreateProjectArgs) (*mcp.CallToolResult, any, error) {
 		// Validate project name
 		if args.Name == "" {
@@ -1081,8 +1086,14 @@ func registerMCPTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "onboard",
 		Description: "Get personalized onboarding guidance for CAMI based on current setup state. " +
-			"Analyzes configuration, available agents, and deployed agents to provide next steps. " +
-			"Use this when user is new to CAMI or asks 'what should I do next?'",
+			"WHEN TO USE: User is new to CAMI, asks 'what should I do next?', or seems lost. " +
+			"WORKFLOW: " +
+			"1) Invoke this tool to analyze current setup state " +
+			"2) Review the analysis and recommended next step " +
+			"3) If no agent sources: Offer to add sources with mcp__cami__add_source " +
+			"4) If sources exist but no deployed agents: Help user create/start a project " +
+			"5) If project exists: Guide user to use deployed agents. " +
+			"IMPORTANT: Use this proactively when user seems uncertain about next steps.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
 		cfg, err := config.Load()
 		configExists := err == nil
