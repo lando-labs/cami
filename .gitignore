@@ -24,6 +24,10 @@ go.work
 # macOS
 .DS_Store
 
+# Firebase (not used in this project)
+firebase-debug.log
+.firebase/
+
 # Config (user-specific)
 .cami.json
 
