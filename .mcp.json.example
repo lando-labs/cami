@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "cami": {
-      "command": "/absolute/path/to/cami",
-      "args": ["--mcp"]
-    }
-  }
-}

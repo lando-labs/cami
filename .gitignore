@@ -32,8 +32,7 @@ firebase-debug.log
 .cami.json
 
 # Claude Code settings (user-specific)
-# NOTE: .claude/settings.local.json is tracked in THIS repo for auto-setup
-# but should be ignored in projects using CAMI
+.claude/settings.local.json
 
 # Internal reference documentation (not for open source release)
 reference/

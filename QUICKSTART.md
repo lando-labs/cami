@@ -24,7 +24,7 @@ Claude: *uses mcp__cami__onboard*
 
 ## How It Works
 
-The `.claude/settings.local.json` file in this repo configures CAMI to run via `go run` whenever you use Claude Code in this directory. No build step, no global installation needed.
+The `.mcp.json` file in this repo configures CAMI to run via `go run` whenever you use Claude Code in this directory. No build step, no global installation needed.
 
 ## Next Steps
 
