@@ -31,8 +31,5 @@ firebase-debug.log
 # Config (user-specific)
 .cami.json
 
-# Claude Code settings (user-specific)
-.claude/settings.local.json
-
 # Internal reference documentation (not for open source release)
 reference/

@@ -100,7 +100,7 @@ deploy_locations:
 
 ### Claude Code Setup
 
-Add to your Claude Code MCP settings (`~/.claude/settings.json` or project `.claude/settings.local.json`):
+Add to your project's `.mcp.json`:
 
 ```json
 {

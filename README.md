@@ -39,7 +39,7 @@ For using CAMI across multiple projects:
 # Build and install
 go build -o ~/.cami/cami ./cmd/cami
 
-# Add to your project's .mcp.json or .claude/settings.local.json
+# Add to your project's .mcp.json
 {
   "mcpServers": {
     "cami": {
