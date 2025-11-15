@@ -87,7 +87,7 @@ func loadCamiIgnore(dir string) ([]string, error) {
 		}
 		return nil, fmt.Errorf("failed to open .camiignore: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var patterns []string
 	scanner := bufio.NewScanner(file)
@@ -209,7 +209,7 @@ func LoadAgent(filePath string) (*Agent, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 

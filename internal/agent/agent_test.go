@@ -140,8 +140,8 @@ func TestLoadAgents(t *testing.T) {
 		createTestAgent(t, tmpDir, "valid", "1.0.0", "Valid", "Content")
 
 		// Create non-markdown files
-		os.WriteFile(filepath.Join(tmpDir, "README.txt"), []byte("readme"), 0644)
-		os.WriteFile(filepath.Join(tmpDir, "data.json"), []byte("{}"), 0644)
+		_ = os.WriteFile(filepath.Join(tmpDir, "README.txt"), []byte("readme"), 0644)
+		_ = os.WriteFile(filepath.Join(tmpDir, "data.json"), []byte("{}"), 0644)
 
 		agents, err := LoadAgents(tmpDir)
 
