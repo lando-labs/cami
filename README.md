@@ -16,22 +16,30 @@ CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynami
 
 ## Quick Start
 
-### 1. Build & Install
+### Zero-Setup Mode (Recommended for Development)
 
 ```bash
-# Clone and build
-cd /path/to/cami
-go build -o ~/.cami/cami ./cmd/cami
-
-# Optional: Add to PATH
-ln -s ~/.cami/cami /usr/local/bin/cami
+# Clone and open
+git clone <cami-repo-url>
+cd cami
+# Open in Claude Code
 ```
 
-### 2. Configure Claude Code
+That's it! CAMI automatically runs via `go run` when you use Claude Code in this directory.
 
-Add to your project's `.claude/settings.local.json` or global `~/.claude/settings.json`:
+Try it: Ask Claude "Help me get started with CAMI"
 
-```json
+See [QUICKSTART.md](QUICKSTART.md) for details.
+
+### Production Installation
+
+For using CAMI across multiple projects:
+
+```bash
+# Build and install
+go build -o ~/.cami/cami ./cmd/cami
+
+# Add to your project's .claude/settings.local.json
 {
   "mcpServers": {
     "cami": {
@@ -42,28 +50,22 @@ Add to your project's `.claude/settings.local.json` or global `~/.claude/setting
 }
 ```
 
-Restart Claude Code after adding the configuration.
-
-### 3. First-Time Setup (via Claude Code)
+### First-Time Setup
 
 Open Claude Code and interact naturally:
 
 ```
 You: "Help me get started with CAMI"
 Claude: *uses mcp__cami__onboard*
-"I see CAMI isn't configured yet. Let me help you set it up."
 
 You: "Add agent source from git@github.com:yourorg/agents.git"
 Claude: *uses mcp__cami__add_source*
-"✓ Cloned to ~/.cami/sources/agents (X agents available)"
 
 You: "Add frontend and backend agents to this project"
 Claude: *uses mcp__cami__deploy_agents*
-"✓ Deployed frontend (v1.1.0)
- ✓ Deployed backend (v1.1.0)"
 ```
 
-That's it! CAMI will create `~/.cami/config.yaml` automatically and deploy agents to `.claude/agents/` in your project.
+CAMI creates `~/.cami/config.yaml` automatically and deploys agents to `.claude/agents/` in your project.
 
 ## Architecture
 

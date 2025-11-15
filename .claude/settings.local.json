@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "cami": {
+      "command": "go",
+      "args": ["run", "./cmd/cami", "--mcp"],
+      "env": {}
+    }
+  }
+}
