@@ -1,69 +1,62 @@
 # CAMI - Claude Agent Management Interface
 
-**MCP-First Architecture for Claude Code Integration**
+**Your AI Agent Guild Headquarters**
 
-CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynamically manage specialized AI agents. Single binary with dual modes: MCP server for Claude Code integration (primary) and CLI for scripting/automation (secondary).
+CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynamically manage specialized AI agents across all your projects. Single binary, clean workspace, conversation-first interface.
 
 ## Features
 
-- **MCP Server Integration**: 13 MCP tools for native Claude Code workflows
-- **Global Agent Storage**: Single source of truth at `~/.cami/sources/`
+- **13 MCP Tools**: Native Claude Code integration for agent management
+- **Global Agent Storage**: Single source of truth at `~/cami/sources/`
 - **Priority-Based Deduplication**: Override agents with custom versions (lower priority number = higher precedence)
 - **Smart Documentation**: Automatic CLAUDE.md updates with deployed agent information
 - **Version Tracking**: Compare deployed versions with available updates
 - **Multiple Sources**: Manage agents from Git repositories with priority-based loading
-- **.camiignore Support**: Flexible file filtering with glob patterns
+- **Git-Trackable Workspace**: Optionally version control your CAMI setup and custom agents
 
-## Quick Start
+## Installation
 
-### Zero-Setup Mode (Recommended for Development)
+### Download & Install
+
+**Coming soon: Homebrew, direct downloads**
+
+For now, build from source:
 
 ```bash
-# Clone and open
-git clone <cami-repo-url>
+# Clone the repository
+git clone https://github.com/lando-labs/cami.git
 cd cami
-# Open in Claude Code
-```
 
-That's it! CAMI automatically runs via `go run` when you use Claude Code in this directory.
-
-Try it: Ask Claude "Help me get started with CAMI"
-
-### Production Installation
-
-For using CAMI across multiple projects:
-
-```bash
 # Build and install
-go build -o ~/.cami/cami ./cmd/cami
-
-# Add to your project's .mcp.json
-{
-  "mcpServers": {
-    "cami": {
-      "command": "~/.cami/cami",
-      "args": ["--mcp"]
-    }
-  }
-}
+make install
 ```
+
+This creates:
+- `~/cami/` - Your CAMI workspace
+- `/usr/local/bin/cami` - Binary on your PATH
 
 ### First-Time Setup
 
-Open Claude Code and interact naturally:
+```bash
+# Open your CAMI workspace
+cd ~/cami
+claude
+
+# Ask Claude to help you get started
+```
 
 ```
 You: "Help me get started with CAMI"
-Claude: *uses mcp__cami__onboard*
+Claude: *uses mcp__cami__onboard to guide you*
 
-You: "Add agent source from git@github.com:yourorg/agents.git"
+You: "Add the official agent library"
 Claude: *uses mcp__cami__add_source*
 
-You: "Add frontend and backend agents to this project"
-Claude: *uses mcp__cami__deploy_agents*
+You: "What agents are available?"
+Claude: *uses mcp__cami__list_agents*
 ```
 
-CAMI creates `~/.cami/config.yaml` automatically and deploys agents to `.claude/agents/` in your project.
+That's it! CAMI will guide you through adding agent sources and deploying agents to your projects.
 
 ## Architecture
 
@@ -80,15 +73,23 @@ $ cami deploy frontend backend ~/projects/my-app
 $ cami scan ~/projects/my-app
 ```
 
-### Global Agent Storage
+### Workspace Structure
 
 ```
-~/.cami/
-├── config.yaml           # Global configuration
-├── sources/              # Global agent sources
-│   ├── team-agents/     # Team/company agents
-│   └── my-agents/       # Personal custom agents
-└── cami                 # Single binary
+~/cami/                          # Your CAMI workspace
+├── CLAUDE.md                    # CAMI documentation and persona
+├── README.md                    # Quick start guide
+├── .mcp.json                    # MCP server configuration
+├── .gitignore                   # Git ignore rules
+├── config.yaml                  # CAMI configuration
+├── .claude/
+│   └── agents/                  # CAMI's own agents
+├── sources/                     # Agent sources
+│   ├── official-agents/        # (if added)
+│   ├── team-agents/            # (if added)
+│   └── my-agents/              # Your custom agents
+
+/usr/local/bin/cami             # Binary on PATH
 ```
 
 ### Priority-Based Deduplication
@@ -220,38 +221,95 @@ docs/
 .github/
 ```
 
-## Common Workflows
+## Using CAMI
 
-**Via Claude Code (recommended):**
-
-```
-"Create a new meditation app project"
-→ Claude gathers requirements, recommends agents, creates project
-
-"What agents do I have?"
-→ Claude scans deployed agents and shows versions
-
-"Update my agents"
-→ Claude pulls latest from sources and offers to redeploy updates
-
-"Add the QA agent to this project"
-→ Claude deploys agent and updates CLAUDE.md
-```
-
-**Via CLI:**
+### Working in Your CAMI Workspace
 
 ```bash
-# Set up new project
-cami source add git@github.com:yourorg/agents.git
-cami deploy frontend backend ~/my-project
-cami update-docs ~/my-project
+cd ~/cami
+claude
 
-# Update agents across projects
-cami source update
-cami scan ~/my-project  # Check for updates
+# Natural language interface
+"Add the official agent library"
+"What agents are available?"
+"Deploy frontend and backend agents to ~/projects/my-app"
+"Create a custom database agent"
+```
+
+### Git Tracking (Optional)
+
+Track your CAMI workspace to share setup with your team:
+
+```bash
+cd ~/cami
+git init
+git add .
+git commit -m "Initial CAMI setup"
+git remote add origin <your-repo-url>
+git push -u origin main
+```
+
+The included `.gitignore` is configured to:
+- ✅ Track your custom agents in `sources/my-agents/`
+- ❌ Ignore pulled sources (managed by CAMI)
+- ? Your choice on `config.yaml` (remove from .gitignore to track)
+
+### CLI Commands
+
+CAMI commands work from anywhere:
+
+```bash
+# Agent management
+cami list                           # List available agents
+cami deploy <agents> <path>         # Deploy agents to project
+cami scan <path>                    # Scan deployed agents
+cami update-docs <path>             # Update CLAUDE.md
+
+# Source management
+cami source list                    # List agent sources
+cami source add <git-url>           # Add new source
+cami source update [name]           # Update sources (git pull)
+cami source status                  # Check git status
+
+# Location management
+cami locations list                 # List tracked locations
+cami locations add <name> <path>    # Add location
+cami locations remove <name>        # Remove location
+```
+
+### Global MCP Setup (Optional)
+
+To use CAMI from any Claude Code session (not just ~/cami/):
+
+Add to `~/.claude/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "cami": {
+      "command": "cami",
+      "args": ["--mcp"]
+    }
+  }
+}
 ```
 
 ## Development
+
+**Contributing to CAMI? Welcome!**
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/lando-labs/cami.git
+cd cami
+
+# Open in Claude Code (dev mode with go run)
+claude
+```
+
+The `.mcp.json` in this repo uses `go run` for zero-setup development.
 
 ### Project Structure
 
@@ -264,19 +322,51 @@ cami/
 │   ├── deploy/            # Agent deployment
 │   ├── docs/              # CLAUDE.md management
 │   ├── discovery/         # Agent scanning
-│   └── cli/               # CLI commands
+│   ├── cli/               # CLI commands
+│   ├── mcp/               # MCP server implementation
+│   └── tui/               # Terminal UI
+├── install/
+│   ├── templates/         # User workspace templates
+│   └── install.sh         # Installation script
 ├── .claude/agents/        # Deployed agents for CAMI development
+├── .mcp.json              # Dev mode: go run
+├── Makefile               # Build, test, release targets
 └── README.md              # This file
 ```
 
-### Building
+### Build & Test
 
 ```bash
 # Build binary
-go build -o cami ./cmd/cami
+make build
+
+# Build for all platforms
+make release-all
+
+# Package releases with installer
+make package
 
 # Run tests
-go test ./...
+make test
+
+# Run linters
+make lint
+
+# Install locally (creates ~/cami/ workspace)
+make install
+```
+
+### Testing User Experience
+
+```bash
+# Install to ~/cami/
+make install
+
+# Test user workspace
+cd ~/cami
+claude
+
+# Ask: "Help me get started with CAMI"
 ```
 
 ## Documentation

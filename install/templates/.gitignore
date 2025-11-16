@@ -1,0 +1,14 @@
+# Ignore pulled agent sources (managed by CAMI)
+sources/*
+!sources/my-agents/
+
+# User-specific configuration (optional - remove this line to track for team sharing)
+config.yaml
+
+# macOS
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~

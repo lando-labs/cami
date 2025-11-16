@@ -1,33 +1,37 @@
-# CAMI - Claude Agent Management Interface
+# CAMI Development - Claude Agent Management Interface
 
-**MCP-First Architecture for Claude Code Integration**
+**CAMI Source Code Repository**
 
-CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynamically manage specialized AI agents. It provides a single binary with dual modes: MCP server for Claude Code integration (primary) and CLI for scripting/automation (secondary).
+This is the CAMI development repository. You are working on the Go codebase that powers CAMI's MCP server and CLI.
 
 ---
 
-## Claude Context: Your Role as Agent Orchestrator
+## Claude Context: CAMI Developer Assistant
 
-**You are an elite agent scout and orchestrator** - the kind that championship teams build dynasties around. Your analytical skills help users build their perfect "agent guild" by knowing exactly when to deploy proven veteran agents versus calling up a promising rookie for the right situation.
+**You are assisting with CAMI development** - working on the Go codebase that implements the Model Context Protocol (MCP) server and CLI for Claude Code agent management.
 
-**Your Core Responsibilities:**
+**Your Focus Areas:**
 
-1. **Scout & Recommend** - Analyze project requirements and recommend the optimal agent lineup. Know the strengths of each available agent and suggest the right combination.
+1. **Go Development** - Write clean, idiomatic Go code following the project's patterns and conventions.
 
-2. **Orchestrate Creation** - When a specialized agent doesn't exist yet, you don't create it yourself. You delegate to agent-architect (your "development partner") to develop new specialists, often in parallel when building a full roster.
+2. **MCP Implementation** - Understand and work with the MCP protocol implementation in `internal/mcp/`.
 
-3. **Guide Workflows** - Lead users through multi-step processes with clear questions and confirmations. Never rush into tool usage - gather requirements first, confirm the plan, then execute.
+3. **Agent Management Logic** - Work on agent loading, deployment, source management in `internal/agent/`, `internal/deploy/`, etc.
 
-4. **Build Agent Guilds** - Help teams create their collection of specialized agents that work together. Some projects need a small focused team, others need a full roster of specialists.
+4. **Cross-Platform Support** - Ensure code works on macOS, Linux, and Windows.
 
-**Your Mindset:**
+5. **Testing & Quality** - Write tests, use the QA agent for coverage, maintain code quality.
 
-- **Patient & Methodical**: Ask clarifying questions before acting
-- **Strategic**: Think about the full project lifecycle when recommending agents
-- **Collaborative**: Work with agent-architect to create missing specialists
-- **Transparent**: Explain your reasoning when suggesting agents
+**Development Workflow:**
 
-**Remember:** You're not just deploying tools - you're helping users build their championship agent guild. Make thoughtful recommendations, explain trade-offs, and ensure every agent serves a clear purpose.
+- Use `go run ./cmd/cami` for local testing
+- The `.mcp.json` in this repo uses `go run` for zero-setup development
+- Run `make build` to compile binary
+- Run `make test` for tests
+- Run `make lint` for code quality checks
+- Use deployed agents (qa, agent-architect) for development tasks
+
+**Remember:** This is the CAMI source code repo. Users install CAMI via releases and get a clean `~/cami/` workspace with templates from `install/templates/`.
 
 ---
 
@@ -46,35 +50,43 @@ $ cami deploy frontend backend ~/projects/my-app
 $ cami scan ~/projects/my-app
 ```
 
-### Global Agent Storage
+### User Workspace Structure
 
-CAMI uses a global agent repository at `~/.cami/sources/` instead of per-project storage:
+CAMI creates a user workspace at `~/cami/` during installation:
 
 ```
-~/.cami/
-├── config.yaml           # Global configuration
-├── sources/              # Global agent sources
-│   ├── team-agents/     # Team/company agents (optional)
-│   └── my-agents/       # Personal custom agents (optional)
-└── cami                 # Single binary (MCP + CLI)
+~/cami/                          # User workspace (created by installer)
+├── CLAUDE.md                    # User-facing CAMI documentation
+├── README.md                    # User quick start guide
+├── .mcp.json                    # Local MCP config
+├── .gitignore                   # Git ignore rules
+├── config.yaml                  # CAMI configuration
+├── .claude/
+│   └── agents/                  # CAMI's own agents
+├── sources/                     # Agent sources
+│   ├── official-agents/        # (if added)
+│   ├── team-agents/            # (if added)
+│   └── my-agents/              # User's custom agents
+
+/usr/local/bin/cami             # Binary (on PATH)
 ```
 
-**Benefits of global storage:**
-- Agents available across all projects without duplication
-- Single source of truth for agent versions
-- Easier to update agents globally
-- Simpler mental model
+**Key Concepts:**
+- User workspace is separate from source code repo
+- Templates live in `install/templates/` in this repo
+- Installer copies templates to `~/cami/` during setup
+- Users can optionally track `~/cami/` with Git
 
 ### Configuration Format
 
-`~/.cami/config.yaml`:
+User's `~/cami/config.yaml`:
 
 ```yaml
 version: "1"
 agent_sources:
   - name: team-agents
     type: local
-    path: ~/.cami/sources/team-agents
+    path: ~/cami/sources/team-agents
     priority: 50
     git:
       enabled: true
@@ -82,47 +94,108 @@ agent_sources:
 
   - name: my-agents
     type: local
-    path: ~/.cami/sources/my-agents
+    path: ~/cami/sources/my-agents
     priority: 10
     git:
       enabled: false
 
 deploy_locations:
   - name: my-project
-    path: /Users/lando/projects/my-project
-  - name: client-project
-    path: /Users/lando/clients/acme-app
+    path: ~/projects/my-project
 ```
 
 **Priority-based deduplication**: When the same agent exists in multiple sources, the lowest priority number wins (my-agents: 10 > team-agents: 50). Priority 1 = highest, 100 = lowest.
 
-## MCP Server Configuration
+## Development Setup
 
-### Claude Code Setup
+### This Repository (Dev Mode)
 
-Add to your project's `.mcp.json`:
+This repo has `.mcp.json` configured for development:
 
 ```json
 {
   "mcpServers": {
     "cami": {
-      "command": "~/.cami/cami",
-      "args": ["--mcp"]
+      "command": "go",
+      "args": ["run", "./cmd/cami", "--mcp"]
     }
   }
 }
 ```
 
-### Installation
+Open this directory in Claude Code and CAMI runs automatically via `go run`.
+
+### Building
 
 ```bash
-# Download binary (future: Homebrew available)
-curl -L https://github.com/lando-labs/cami/releases/latest/download/cami-macos \
-  -o ~/.cami/cami
-chmod +x ~/.cami/cami
+# Build for current platform
+make build
 
-# Optional: Add to PATH for CLI convenience
-ln -s ~/.cami/cami /usr/local/bin/cami
+# Build for all platforms
+make release-all
+
+# Package releases with installer
+make package
+
+# Install locally (creates ~/cami/ workspace)
+make install
+```
+
+### Testing
+
+```bash
+# Run tests
+make test
+
+# Run linters
+make lint
+
+# Test installation
+make install
+cd ~/cami
+claude  # Test user experience
+```
+
+## Installation Templates
+
+User workspace files are in `install/templates/`:
+
+```
+install/
+├── templates/
+│   ├── CLAUDE.md        # User-facing CAMI persona doc
+│   ├── README.md        # User quick start guide
+│   ├── .gitignore       # Git ignore for user workspace
+│   └── .mcp.json        # Local MCP config (uses 'cami' on PATH)
+└── install.sh           # Installation script
+```
+
+When modifying the user experience:
+- Update templates in `install/templates/`
+- Update installer in `install/install.sh`
+- Test with `make install` and check `~/cami/`
+
+## Project Structure
+
+```
+cami/
+├── cmd/cami/main.go       # Single binary entry point
+├── internal/
+│   ├── agent/             # Agent loading and parsing
+│   ├── config/            # Configuration management
+│   ├── deploy/            # Agent deployment
+│   ├── docs/              # CLAUDE.md management
+│   ├── discovery/         # Agent scanning
+│   ├── cli/               # CLI commands
+│   ├── mcp/               # MCP server implementation
+│   └── tui/               # Terminal UI
+├── install/
+│   ├── templates/         # User workspace templates
+│   └── install.sh         # Installation script
+├── .claude/agents/        # Deployed agents for CAMI development
+├── .mcp.json              # Dev mode: go run
+├── Makefile               # Build, test, release targets
+└── README.md              # Main documentation
 ```
 
 ## MCP Tools Reference
