@@ -23,7 +23,7 @@ func NewLocationsCommand() *cobra.Command {
 		Use:   "locations",
 		Short: "List all configured deployment locations",
 		Long: `List all configured deployment locations.
-Locations are stored in ~/.cami.json and can be used for deployment targets.`,
+Locations are stored in ~/cami-workspace/config.yaml and can be used for deployment targets.`,
 		Example: `  cami locations
   cami locations --output json`,
 		RunE: func(cmd *cobra.Command, args []string) error {

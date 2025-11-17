@@ -713,7 +713,7 @@ func registerMCPTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "add_source",
 		Description: "Add a new agent source by cloning a Git repository. " +
-			"The repository will be cloned to ~/.cami/sources/<name>/ and added to configuration. " +
+			"The repository will be cloned to ~/cami-workspace/sources/<name>/ and added to configuration. " +
 			"Use this to add official agent libraries or team/company agent sources.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args AddSourceArgs) (*mcp.CallToolResult, any, error) {
 		name := args.Name
@@ -742,12 +742,12 @@ func registerMCPTools(server *mcp.Server) {
 			}
 		}
 
-		// Determine target path: ~/.cami/sources/<name>
-		homeDir, err := os.UserHomeDir()
+		// Determine target path using config (respects CAMI_DIR)
+		configDir, err := config.GetConfigDir()
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get home directory: %w", err)
+			return nil, nil, fmt.Errorf("failed to get config directory: %w", err)
 		}
-		sourcesDir := filepath.Join(homeDir, ".cami", "sources")
+		sourcesDir := filepath.Join(configDir, "sources")
 		if err := os.MkdirAll(sourcesDir, 0755); err != nil {
 			return nil, nil, fmt.Errorf("failed to create sources directory: %w", err)
 		}
@@ -788,7 +788,7 @@ func registerMCPTools(server *mcp.Server) {
 			return nil, nil, fmt.Errorf("failed to save config: %w", err)
 		}
 
-		responseText := fmt.Sprintf("✓ Cloned %s to ~/.cami/sources/%s\n", name, name)
+		responseText := fmt.Sprintf("✓ Cloned %s to ~/cami-workspace/sources/%s\n", name, name)
 		responseText += fmt.Sprintf("✓ Added source with priority %d\n", priority)
 		responseText += fmt.Sprintf("✓ Found %d agents\n", agentCount)
 
@@ -1081,8 +1081,8 @@ func registerMCPTools(server *mcp.Server) {
 			responseText += "- CLI: `cami source add <git-url>`\n"
 			responseText += "- MCP: Use `mcp__cami__add_source` with your Git repository URL\n\n"
 			responseText += "This will:\n"
-			responseText += "1. Create `~/.cami/` directory for global configuration\n"
-			responseText += "2. Clone the agent repository to `~/.cami/sources/<name>/`\n"
+			responseText += "1. Create `~/cami-workspace/` directory for global configuration\n"
+			responseText += "2. Clone the agent repository to `~/cami-workspace/sources/<name>/`\n"
 			responseText += "3. Make agents available across all your projects\n\n"
 			responseText += "After adding a source, you can deploy agents to any project with `mcp__cami__deploy_agents`!\n"
 

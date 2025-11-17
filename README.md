@@ -178,14 +178,14 @@ You are a specialized frontend development expert...
 
 ## Configuration
 
-`~/.cami/config.yaml`:
+`~/cami-workspace/config.yaml`:
 
 ```yaml
 version: "1"
 agent_sources:
   - name: team-agents
     type: local
-    path: ~/.cami/sources/team-agents
+    path: ~/cami-workspace/sources/team-agents
     priority: 50
     git:
       enabled: true
@@ -193,7 +193,7 @@ agent_sources:
 
   - name: my-agents
     type: local
-    path: ~/.cami/sources/my-agents
+    path: ~/cami-workspace/sources/my-agents
     priority: 10
     git:
       enabled: false
@@ -382,7 +382,7 @@ claude
 - ✅ Single binary with dual modes (MCP + CLI)
 - ✅ 13 MCP tools for complete Claude Code integration
 - ✅ Project creation workflow with `create_project` tool
-- ✅ Global agent storage at `~/.cami/sources/`
+- ✅ Global agent storage at `~/cami-workspace/sources/`
 - ✅ Inverted priority system (1 = highest, 100 = lowest)
 - ✅ Priority-based multi-source deduplication
 - ✅ Source management tools (add, update, status)

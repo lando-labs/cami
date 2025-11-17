@@ -20,7 +20,14 @@
       "Bash(gh api:*)",
       "Bash(git clone:*)",
       "Bash(shasum:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(gh release create:*)",
+      "Bash(build/cami-darwin-amd64-v0.3.0-alpha.1-2-g697a936.tar.gz )",
+      "Bash(build/cami-darwin-arm64-v0.3.0-alpha.1-2-g697a936.tar.gz )",
+      "Bash(build/cami-linux-amd64-v0.3.0-alpha.1-2-g697a936.tar.gz )",
+      "Bash(build/cami-linux-arm64-v0.3.0-alpha.1-2-g697a936.tar.gz )",
+      "Bash(build/cami-windows-amd64-v0.3.0-alpha.1-2-g697a936.tar.gz )",
+      "Bash(build/cami-windows-arm64-v0.3.0-alpha.1-2-g697a936.tar.gz)"
     ],
     "deny": [],
     "ask": []

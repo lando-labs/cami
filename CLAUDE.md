@@ -297,10 +297,10 @@ User: "Show me my agent sources"
 Claude: *uses mcp__cami__list_sources*
 "You have 2 agent sources:
  1. lando-agents (100 priority) - 29 agents
-    Path: ~/.cami/sources/lando-agents
+    Path: ~/cami-workspace/sources/lando-agents
     Git: git@github.com:lando-labs/lando-agents.git
  2. my-agents (200 priority) - 5 agents
-    Path: ~/.cami/sources/my-agents
+    Path: ~/cami-workspace/sources/my-agents
     Git: Not configured"
 ```
 
@@ -313,8 +313,8 @@ Claude: *uses mcp__cami__list_sources*
 - `priority` (number, optional) - Priority for deduplication (lower = higher priority, default: 50)
 
 **Behavior**:
-- Clones repository to `~/.cami/sources/<name>/`
-- Updates `~/.cami/config.yaml`
+- Clones repository to `~/cami-workspace/sources/<name>/`
+- Updates `~/cami-workspace/config.yaml`
 - Scans for agents in cloned repository
 - Returns agent count and source info
 
@@ -322,7 +322,7 @@ Claude: *uses mcp__cami__list_sources*
 ```
 User: "Add the official Lando agent library"
 Claude: *uses mcp__cami__add_source with git@github.com:lando-labs/lando-agents.git*
-"✓ Cloned lando-agents to ~/.cami/sources/lando-agents
+"✓ Cloned lando-agents to ~/cami-workspace/sources/lando-agents
  ✓ Found 29 agents"
 ```
 
@@ -371,7 +371,7 @@ Claude: *uses mcp__cami__source_status*
 - `path` (string, required) - Absolute path to project directory
 
 **Behavior**:
-- Adds location to `~/.cami/config.yaml`
+- Adds location to `~/cami-workspace/config.yaml`
 - Validates path exists
 - Prevents duplicate locations
 
@@ -497,7 +497,7 @@ User: "Help me create a new agent"
 
 Claude workflow (with agent-architect):
 1. Invoke agent-architect to design agent
-2. Save agent file to ~/.cami/sources/my-agents/
+2. Save agent file to ~/cami-workspace/sources/my-agents/
 3. Use mcp__cami__list_agents → Verify agent discovered
 4. Use mcp__cami__deploy_agents → Deploy to project
 5. Use mcp__cami__update_claude_md → Document it
@@ -582,7 +582,7 @@ cami/
 │   │   └── loader.go          # LoadAgentsFromSources()
 │   ├── config/                # Configuration management
 │   │   ├── config.go          # Config struct
-│   │   └── loader.go          # Load ~/.cami/config.yaml
+│   │   └── loader.go          # Load ~/cami-workspace/config.yaml
 │   ├── deploy/                # Agent deployment
 │   │   └── deploy.go          # Deploy agents to projects
 │   ├── docs/                  # CLAUDE.md management
@@ -593,7 +593,7 @@ cami/
 │   │   └── commands.go        # CLI command implementations
 │   └── tui/                   # Terminal UI
 │       └── tui.go             # Interactive deployment interface
-└── ~/.cami/                   # User data directory
+└── ~/cami-workspace/                   # User data directory
     ├── config.yaml            # Global configuration
     ├── sources/               # Agent sources
     └── cami                   # Binary
