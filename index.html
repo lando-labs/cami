@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CAMI - Claude Agent Management Interface. Create, manage, and share specialized Claude Code agents across all your projects with natural language commands.">
+    <title>CAMI - Claude Agent Management Interface</title>
+    <link rel="icon" type="image/png" href="cami-logo.png">
+    <style>
+        /* Lando Design System Tokens */
+        :root {
+            /* Ocean Blue Color Palette */
+            --color-ocean-deep: #0A4F6E;
+            --color-ocean-medium: #1B7FA8;
+            --color-ocean-light: #4BA3C3;
+            --color-ocean-foam: #E8F4F8;
+            --color-ocean-lightest: #F0F9FC;
+
+            /* Neutral Colors */
+            --color-neutral-50: #F9FAFB;
+            --color-neutral-100: #F3F4F6;
+            --color-neutral-200: #E5E7EB;
+            --color-neutral-300: #D1D5DB;
+            --color-neutral-400: #9CA3AF;
+            --color-neutral-500: #6B7280;
+            --color-neutral-600: #4B5563;
+            --color-neutral-700: #374151;
+            --color-neutral-800: #1F2937;
+            --color-neutral-900: #111827;
+
+            /* Surface Colors */
+            --color-surface: #FFFFFF;
+            --color-background: var(--color-neutral-50);
+
+            /* Text Colors */
+            --color-text-primary: var(--color-neutral-900);
+            --color-text-secondary: var(--color-neutral-600);
+            --color-text-tertiary: var(--color-neutral-500);
+            --color-text-inverse: #FFFFFF;
+
+            /* Typography */
+            --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-lg: 1.125rem;
+            --font-size-xl: 1.25rem;
+            --font-size-2xl: 1.5rem;
+            --font-size-3xl: 1.875rem;
+            --font-size-4xl: 2.25rem;
+            --font-size-5xl: 3rem;
+
+            --font-weight-normal: 400;
+            --font-weight-medium: 500;
+            --font-weight-semibold: 600;
+            --font-weight-bold: 700;
+
+            --line-height-tight: 1.25;
+            --line-height-normal: 1.5;
+            --line-height-relaxed: 1.75;
+
+            /* Spacing */
+            --spacing-1: 0.25rem;
+            --spacing-2: 0.5rem;
+            --spacing-3: 0.75rem;
+            --spacing-4: 1rem;
+            --spacing-5: 1.25rem;
+            --spacing-6: 1.5rem;
+            --spacing-8: 2rem;
+            --spacing-10: 2.5rem;
+            --spacing-12: 3rem;
+            --spacing-16: 4rem;
+            --spacing-20: 5rem;
+            --spacing-24: 6rem;
+
+            /* Border Radius */
+            --radius-sm: 0.25rem;
+            --radius-md: 0.375rem;
+            --radius-lg: 0.5rem;
+            --radius-xl: 0.75rem;
+            --radius-2xl: 1rem;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+            /* Transitions */
+            --transition-default: all 0.2s ease-in-out;
+            --transition-fast: all 0.15s ease-in-out;
+
+            /* Container Width */
+            --container-max-width: 1200px;
+        }
+
+        /* Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family-base);
+            font-size: var(--font-size-base);
+            line-height: var(--line-height-normal);
+            color: var(--color-text-primary);
+            background-color: var(--color-background);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: var(--font-weight-bold);
+            line-height: var(--line-height-tight);
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-4);
+        }
+
+        h1 {
+            font-size: var(--font-size-4xl);
+            margin-bottom: var(--spacing-6);
+        }
+
+        h2 {
+            font-size: var(--font-size-3xl);
+            margin-bottom: var(--spacing-5);
+        }
+
+        h3 {
+            font-size: var(--font-size-2xl);
+        }
+
+        h4 {
+            font-size: var(--font-size-xl);
+        }
+
+        p {
+            margin-bottom: var(--spacing-4);
+            color: var(--color-text-secondary);
+            line-height: var(--line-height-relaxed);
+        }
+
+        a {
+            color: var(--color-ocean-medium);
+            text-decoration: none;
+            transition: var(--transition-fast);
+        }
+
+        a:hover {
+            color: var(--color-ocean-deep);
+            text-decoration: underline;
+        }
+
+        /* Icons */
+        .icon {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .icon-lg {
+            width: 48px;
+            height: 48px;
+        }
+
+        /* Container */
+        .container {
+            max-width: var(--container-max-width);
+            margin: 0 auto;
+            padding: 0 var(--spacing-6);
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--color-surface);
+            border-bottom: 1px solid var(--color-neutral-200);
+            padding: var(--spacing-4) 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-ocean-medium);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-3);
+        }
+
+        .logo-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .nav {
+            display: flex;
+            gap: var(--spacing-6);
+            align-items: center;
+        }
+
+        .nav a {
+            color: var(--color-text-secondary);
+            font-weight: var(--font-weight-medium);
+            font-size: var(--font-size-sm);
+        }
+
+        .nav a:hover {
+            color: var(--color-ocean-medium);
+            text-decoration: none;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--color-ocean-deep) 0%, var(--color-ocean-medium) 100%);
+            color: var(--color-text-inverse);
+            padding: var(--spacing-24) 0 var(--spacing-20);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: var(--font-size-5xl);
+            color: var(--color-text-inverse);
+            margin-bottom: var(--spacing-6);
+            font-weight: var(--font-weight-bold);
+        }
+
+        .hero-subtitle {
+            font-size: var(--font-size-xl);
+            color: var(--color-ocean-foam);
+            margin-bottom: var(--spacing-8);
+            line-height: var(--line-height-relaxed);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--color-neutral-900);
+            color: #E5E7EB;
+            padding: var(--spacing-6);
+            border-radius: var(--radius-xl);
+            overflow-x: auto;
+            margin-bottom: var(--spacing-6);
+            box-shadow: var(--shadow-lg);
+            font-family: var(--font-family-mono);
+            font-size: var(--font-size-sm);
+            line-height: var(--line-height-relaxed);
+        }
+
+        code {
+            font-family: var(--font-family-mono);
+            font-size: 0.9em;
+            background-color: var(--color-neutral-100);
+            padding: var(--spacing-1) var(--spacing-2);
+            border-radius: var(--radius-sm);
+            color: var(--color-ocean-medium);
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+        }
+
+        .code-block {
+            max-width: 700px;
+            margin: var(--spacing-8) auto;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-4) var(--spacing-8);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            border-radius: var(--radius-lg);
+            border: none;
+            cursor: pointer;
+            transition: var(--transition-default);
+            text-decoration: none;
+            gap: var(--spacing-2);
+        }
+
+        .btn-primary {
+            background-color: var(--color-surface);
+            color: var(--color-ocean-medium);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-ocean-foam);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            text-decoration: none;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--color-text-inverse);
+            border: 2px solid var(--color-surface);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+
+        .btn-ocean {
+            background-color: var(--color-ocean-medium);
+            color: var(--color-text-inverse);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-ocean:hover {
+            background-color: var(--color-ocean-deep);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            text-decoration: none;
+        }
+
+        .btn-lg {
+            padding: var(--spacing-5) var(--spacing-10);
+            font-size: var(--font-size-lg);
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: var(--spacing-4);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cta-primary {
+            text-align: center;
+            margin-top: var(--spacing-8);
+        }
+
+        .supporting-text {
+            margin-top: var(--spacing-4);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-tertiary);
+        }
+
+        /* Sections */
+        .section {
+            padding: var(--spacing-20) 0;
+        }
+
+        .section-alt {
+            background-color: var(--color-surface);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: var(--spacing-12);
+        }
+
+        .section-title {
+            font-size: var(--font-size-3xl);
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .section-subtitle {
+            font-size: var(--font-size-lg);
+            color: var(--color-text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-8);
+            margin-top: var(--spacing-12);
+        }
+
+        .feature-card {
+            background-color: var(--color-surface);
+            padding: var(--spacing-8);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--color-neutral-200);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-default);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--color-ocean-light);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--color-ocean-medium), var(--color-ocean-light));
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-inverse);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .feature-title {
+            font-size: var(--font-size-xl);
+            margin-bottom: var(--spacing-3);
+        }
+
+        .feature-description {
+            color: var(--color-text-secondary);
+            line-height: var(--line-height-relaxed);
+        }
+
+        /* Phase Sections */
+        .phase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-6);
+            margin-top: var(--spacing-8);
+            margin-bottom: var(--spacing-12);
+        }
+
+        .phase-card {
+            background-color: var(--color-ocean-lightest);
+            padding: var(--spacing-6);
+            border-radius: var(--radius-lg);
+            border-left: 4px solid var(--color-ocean-medium);
+        }
+
+        .phase-number {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-ocean-medium);
+            margin-bottom: var(--spacing-2);
+        }
+
+        .phase-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
+            margin-bottom: var(--spacing-3);
+        }
+
+        .phase-description {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            line-height: var(--line-height-relaxed);
+        }
+
+        /* Testimonials */
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing-6);
+            margin-top: var(--spacing-12);
+        }
+
+        .testimonial {
+            background-color: var(--color-surface);
+            padding: var(--spacing-6);
+            border-radius: var(--radius-xl);
+            border-left: 4px solid var(--color-ocean-medium);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .testimonial-quote {
+            font-style: italic;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-4);
+            line-height: var(--line-height-relaxed);
+        }
+
+        .testimonial-author {
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-primary);
+            font-size: var(--font-size-sm);
+        }
+
+        .testimonial-title {
+            color: var(--color-text-tertiary);
+            font-size: var(--font-size-sm);
+        }
+
+        .testimonial-disclaimer {
+            background-color: var(--color-ocean-lightest);
+            border: 1px solid var(--color-ocean-light);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-6);
+            margin-top: var(--spacing-12);
+            text-align: center;
+        }
+
+        .testimonial-disclaimer p {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            margin: 0;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: var(--color-neutral-900);
+            color: var(--color-neutral-400);
+            padding: var(--spacing-12) 0 var(--spacing-6);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-8);
+            margin-bottom: var(--spacing-8);
+        }
+
+        .footer-section h4 {
+            color: var(--color-text-inverse);
+            font-size: var(--font-size-base);
+            margin-bottom: var(--spacing-4);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: var(--spacing-2);
+        }
+
+        .footer-links a {
+            color: var(--color-neutral-400);
+            font-size: var(--font-size-sm);
+        }
+
+        .footer-links a:hover {
+            color: var(--color-ocean-light);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: var(--spacing-8);
+            border-top: 1px solid var(--color-neutral-800);
+            color: var(--color-neutral-500);
+            font-size: var(--font-size-sm);
+        }
+
+        /* Utility Classes */
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-8 {
+            margin-top: var(--spacing-8);
+        }
+
+        .mb-8 {
+            margin-bottom: var(--spacing-8);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            :root {
+                --font-size-5xl: 2.25rem;
+                --font-size-4xl: 1.875rem;
+                --font-size-3xl: 1.5rem;
+            }
+
+            .hero {
+                padding: var(--spacing-16) 0 var(--spacing-12);
+            }
+
+            .hero h1 {
+                font-size: var(--font-size-3xl);
+            }
+
+            .hero-subtitle {
+                font-size: var(--font-size-lg);
+            }
+
+            .section {
+                padding: var(--spacing-12) 0;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .nav {
+                display: none;
+            }
+
+            pre {
+                padding: var(--spacing-4);
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 var(--spacing-4);
+            }
+
+            .feature-grid,
+            .testimonial-grid,
+            .phase-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <img src="cami-logo.png" alt="CAMI Logo" class="logo-image">
+                <span>CAMI</span>
+            </div>
+            <nav class="nav">
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#agent-architect">Agent Architect</a>
+                <a href="#installation">Installation</a>
+                <a href="#testimonials">Testimonials</a>
+                <a href="https://github.com/lando-labs/cami">GitHub</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container hero-content">
+            <h1>Your AI Agent Guild Headquarters</h1>
+            <p class="hero-subtitle">Create specialized Claude Code agents from requirements, organize them in a clean workspace, and share them across your team. CAMI handles everything through natural language.</p>
+
+            <div class="code-block">
+                <pre><code>You: "I'm building a meditation app. Help me set up the right agents"
+
+CAMI: Let me analyze your requirements...
+      I recommend: frontend, backend, mobile-native, ux, accessibility-expert
+
+You: "Create those agents for my project"
+
+CAMI: ✓ Created project at ~/projects/meditation-app
+      ✓ Deployed 5 specialized agents
+      ✓ Generated CLAUDE.md with project vision
+      Ready to build!</code></pre>
+            </div>
+
+            <div class="cta-buttons">
+                <a href="#installation" class="btn btn-primary btn-lg">Download v0.3.0</a>
+                <a href="https://github.com/lando-labs/cami" class="btn btn-secondary btn-lg">View on GitHub</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem/Solution Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">The Problem: Three Phases of Agent Chaos</h2>
+                <p class="section-subtitle">Every developer building with Claude Code faces the same progression</p>
+            </div>
+
+            <div class="phase-grid">
+                <div class="phase-card">
+                    <div class="phase-number">PHASE 1</div>
+                    <h3 class="phase-title">"I don't know how to build agents"</h3>
+                    <p class="phase-description">Starting with Claude Code but unsure how to structure agents. What makes a good agent vs bad agent? How do I create my first specialized agent?</p>
+                </div>
+
+                <div class="phase-card">
+                    <div class="phase-number">PHASE 2</div>
+                    <h3 class="phase-title">"My agents are scattered everywhere"</h3>
+                    <p class="phase-description">Created a few agents manually. Copy-pasting between projects. No version control or organization. Which version is the latest?</p>
+                </div>
+
+                <div class="phase-card">
+                    <div class="phase-number">PHASE 3</div>
+                    <h3 class="phase-title">"My team needs to collaborate"</h3>
+                    <p class="phase-description">Multiple people creating agents. Need a standard library for the team. Want to track versions and updates across projects.</p>
+                </div>
+            </div>
+
+            <div class="section-header" style="margin-top: var(--spacing-16);">
+                <h2 class="section-title">The Solution: CAMI Solves All Three Phases</h2>
+                <p class="section-subtitle">Create, organize, and share agents through natural conversation</p>
+            </div>
+
+            <div class="code-block">
+                <pre><code># Phase 1: Create agents from requirements
+You: "I need an agent for payment processing with Stripe"
+CAMI: *uses agent-architect to design specialized agent*
+      ✓ Created payment-integration agent (v1.0.0)
+
+# Phase 2: Clean organization
+~/cami/sources/
+├── team-agents/         # Company agents (Git)
+└── my-agents/           # Personal overrides (local)
+
+# Phase 3: Team collaboration
+You: "Add git@github.com:my-company/agents.git"
+CAMI: ✓ Cloned 12 agents from team-agents
+Your team: Clones the same repo, instant access to all agents</code></pre>
+            </div>
+
+            <p style="text-align: center; max-width: 800px; margin: var(--spacing-8) auto;">
+                <strong>The power of agent-architect:</strong> CAMI includes an agent-architect that creates specialized agents from your requirements. Describe your domain, CAMI builds the agent. No manual configuration, no guessing about structure.
+            </p>
+
+            <div class="code-block">
+                <pre><code>You: "Deploy frontend, backend, and payment-integration to this project"
+
+CAMI: ✓ Deployed frontend (v1.1.0)
+      ✓ Deployed backend (v1.1.0)
+      ✓ Deployed payment-integration (v1.0.0)
+      ✓ Updated CLAUDE.md with agent documentation</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="section section-alt">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Key Features</h2>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Natural Language Interface</h3>
+                    <p class="feature-description">Talk to CAMI through Claude Code. No commands to memorize, no config files to edit manually. Just ask Claude to "add the frontend agent" and it happens.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Agent Creation from Requirements</h3>
+                    <p class="feature-description">Built-in agent-architect creates specialized agents from your descriptions. Building a fintech app? CAMI designs payment, security, and compliance agents for you.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Priority-Based Sources</h3>
+                    <p class="feature-description">Override default agents with your custom versions. When the same agent exists in multiple sources, lower priority numbers win. Customize without forking.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            <polyline points="17 6 23 6 23 12"></polyline>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Version Tracking</h3>
+                    <p class="feature-description">CAMI tracks agent versions and notifies you of updates. See which agents are outdated and update them with a single command.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Team Collaboration</h3>
+                    <p class="feature-description">Git-trackable workspace makes sharing easy. Your team clones the agent source repo and gets instant access to all company agents with version control.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Smart Documentation</h3>
+                    <p class="feature-description">CAMI automatically maintains your project's CLAUDE.md file with deployed agent information. No manual documentation maintenance.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Works on Any Platform</h3>
+                    <p class="feature-description">Cross-platform binary for macOS (Intel & Apple Silicon), Linux (x64 & ARM), and Windows (x64 & ARM). Install in seconds with no dependencies.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">How It Works</h2>
+                <p class="section-subtitle">From zero to specialized agents in minutes</p>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">1</div>
+                    <h3 class="feature-title">Install & Initialize</h3>
+                    <p class="feature-description">Download and run the installer. Creates ~/cami/ workspace with clean directory structure. Binary goes on your PATH for global access.</p>
+                    <div class="code-block mt-8">
+                        <pre><code>$ make install
+
+✓ Created ~/cami/ workspace
+✓ Installed to /usr/local/bin/cami
+Ready to use!</code></pre>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">2</div>
+                    <h3 class="feature-title">Build Your Agent Library</h3>
+                    <p class="feature-description">Create custom agents with agent-architect or add team sources from Git. CAMI gives you both flexibility and power.</p>
+                    <div class="code-block mt-8">
+                        <pre><code># Create custom agents
+You: "Create a Stripe integration agent"
+CAMI: ✓ Created payment-integration (v1.0.0)
+
+# Or add team sources
+You: "Add git@github.com:my-team/agents.git"
+CAMI: ✓ Cloned 8 agents from team-agents</code></pre>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">3</div>
+                    <h3 class="feature-title">Create or Deploy Agents</h3>
+                    <p class="feature-description">Describe your project and CAMI recommends agents. Create custom ones from requirements or deploy existing agents.</p>
+                    <div class="code-block mt-8">
+                        <pre><code>You: "Building an e-commerce site"
+
+CAMI: I recommend:
+      • frontend (React specialist)
+      • backend (API development)
+      • payment-integration (Stripe)
+      • security-specialist (OWASP)
+
+      Create this project?</code></pre>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">4</div>
+                    <h3 class="feature-title">Build with Your Agent Guild</h3>
+                    <p class="feature-description">Agents are deployed to .claude/agents/ and ready in Claude Code. Ask specific questions to specific agents. Your specialized team is ready.</p>
+                    <div class="code-block mt-8">
+                        <pre><code>.claude/agents/
+├── frontend.md
+├── backend.md
+├── payment-integration.md
+└── security-specialist.md
+
+All available in Claude Code!</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Agent Architect Section -->
+    <section id="agent-architect" class="section section-alt">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Agent Architect: Your Agent Creation Partner</h2>
+                <p class="section-subtitle">The only agent that ships with CAMI. A specialized Claude Code agent that creates other agents.</p>
+            </div>
+
+            <div class="feature-grid">
+                <!-- Three-Phase Methodology -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i data-lucide="workflow"></i>
+                    </div>
+                    <h3 class="feature-title">Three-Phase Methodology</h3>
+                    <p class="feature-description">Agent-architect <strong>embeds</strong> a three-phase methodology into every agent it creates: <strong>Research/Analyze</strong> (gather context and understand needs), <strong>Build/Core Action</strong> (execute the primary function), and <strong>Follow-up/Maintain</strong> (verify and refine). This framework ensures every CAMI agent is a complete specialist.</p>
+                    <div class="code-block mt-8">
+                        <pre><code><span style="color: var(--color-neutral-500);">// Phases work as a cycle or independently</span>
+
+<strong>Research/Analyze Phase:</strong>
+→ Gather relevant context
+→ Assess current state and gaps
+→ Understand requirements
+→ Formulate informed approach
+
+<strong>Build/Core Action Phase:</strong>
+→ Apply domain expertise
+→ Follow best practices
+→ Make informed decisions
+→ Produce high-quality outputs
+
+<strong>Follow-up/Maintain Phase:</strong>
+→ Verify quality standards
+→ Document decisions
+→ Identify remaining tasks
+→ Guide future iteration</code></pre>
+                    </div>
+                    <p class="feature-description mt-8" style="font-size: var(--font-size-sm); color: var(--color-neutral-600);">
+                        <strong>Modular by design:</strong> Agents run the full cycle for complex tasks, or jump to specific phases as needed. This embedded structure makes every CAMI agent systematic and complete.
+                    </p>
+                </div>
+
+                <!-- Agent Philosophy -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i data-lucide="lightbulb"></i>
+                    </div>
+                    <h3 class="feature-title">Philosophy-Driven Design</h3>
+                    <p class="feature-description">Every CAMI agent has a <strong>philosophy</strong> - guiding principles that shape how the agent approaches problems and makes decisions.</p>
+                    <div class="code-block mt-8">
+                        <pre><code><span style="color: var(--color-neutral-500);">// Example: QA Agent Philosophy</span>
+
+<strong>Core Philosophy:</strong> "Testing as Documentation"
+
+Tests are living documentation - they not only
+verify correctness but also communicate intent,
+document behavior, and provide examples of usage.
+Good tests make code fearlessly maintainable.
+
+<span style="color: var(--color-neutral-500);">// This philosophy informs every decision</span>
+<span style="color: var(--color-neutral-500);">// the QA agent makes about testing</span></code></pre>
+                    </div>
+                    <p class="feature-description mt-8" style="font-size: var(--font-size-sm); color: var(--color-neutral-600);">
+                        Philosophy serves as a north star - keeping agents focused and consistent even as requirements evolve.
+                    </p>
+                </div>
+
+                <!-- Tech Stack Configuration -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i data-lucide="settings"></i>
+                    </div>
+                    <h3 class="feature-title">Tech Stack Awareness</h3>
+                    <p class="feature-description">Agent-architect includes a <strong>tech stack section</strong> that influences how agents are created. Edit it to match your team's tools and preferences.</p>
+                    <div class="code-block mt-8">
+                        <pre><code><span style="color: var(--color-neutral-500);">// Default tech stack (edit for your use case)</span>
+
+<strong>Frontend:</strong> React, Next.js, TypeScript
+<strong>Backend:</strong> Node.js, Express, PostgreSQL
+<strong>Testing:</strong> Vitest, Playwright
+<strong>DevOps:</strong> Docker, GitHub Actions
+
+<span style="color: var(--color-neutral-500);">// Agent-architect uses this context</span>
+<span style="color: var(--color-neutral-500);">// when creating domain-specific agents</span></code></pre>
+                    </div>
+                    <p class="feature-description mt-8" style="font-size: var(--font-size-sm); color: var(--color-neutral-600);">
+                        <strong>Customization tip:</strong> Update the tech stack section in <code>agent-architect.md</code> to create agents tailored to your environment.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Call to Action -->
+            <div style="text-align: center; margin-top: 3rem;">
+                <p style="font-size: var(--font-size-lg); color: var(--color-neutral-700); margin-bottom: 1.5rem;">
+                    Agent-architect ships with CAMI and deploys automatically to <code>~/cami/.claude/agents/</code>
+                </p>
+                <a href="#installation" class="btn-primary">Get Started with CAMI</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Section -->
+    <section id="installation" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Installation</h2>
+                <p class="section-subtitle">One-click download for all platforms</p>
+            </div>
+
+            <div class="cta-primary">
+                <a href="https://github.com/lando-labs/cami/releases/latest" class="btn btn-ocean btn-lg">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download for Your Platform
+                </a>
+                <p class="supporting-text">
+                    Available for macOS (Intel & Apple Silicon), Linux (x64 & ARM), Windows (x64 & ARM)
+                </p>
+            </div>
+
+            <div class="code-block mt-8" style="max-width: 600px; margin-left: auto; margin-right: auto;">
+                <pre><code># Extract and Install
+tar -xzf cami-0.3.0-darwin-arm64.tar.gz
+cd cami-0.3.0-darwin-arm64
+./install.sh
+
+# Open CAMI workspace
+cd ~/cami
+claude
+
+# Ask Claude to help you get started
+"Help me get started with CAMI"</code></pre>
+            </div>
+
+            <div class="text-center mt-8">
+                <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-4);">Or build from source with Go 1.21+</p>
+                <a href="https://github.com/lando-labs/cami#installation" class="btn btn-ocean">Build Instructions</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Why CAMI <em>Thinks</em> Developers Will Love CAMI</h2>
+                <p class="section-subtitle">What we hope you'll say about CAMI</p>
+            </div>
+
+            <div class="testimonial-grid">
+                <div class="testimonial">
+                    <p class="testimonial-quote">"Before CAMI, I had 5 copies of my frontend agent across different projects. Now I have one source and deploy it everywhere. Updates propagate in seconds."</p>
+                    <div class="testimonial-author">Sarah M.</div>
+                    <div class="testimonial-title">Full-Stack Developer</div>
+                </div>
+
+                <div class="testimonial">
+                    <p class="testimonial-quote">"Our team shares a Git repo with our CAMI setup. New developers clone it, run the installer, and have access to all 15 of our company agents. No onboarding docs, no manual setup."</p>
+                    <div class="testimonial-author">Michael T.</div>
+                    <div class="testimonial-title">Engineering Manager</div>
+                </div>
+
+                <div class="testimonial">
+                    <p class="testimonial-quote">"I can use team agents as defaults but override with my customized versions for specific projects. No forking, no merge conflicts, just priority numbers."</p>
+                    <div class="testimonial-author">Alex K.</div>
+                    <div class="testimonial-title">DevOps Engineer</div>
+                </div>
+
+                <div class="testimonial">
+                    <p class="testimonial-quote">"I don't remember CLI commands. I just ask Claude 'add the testing agent' and it happens. That's how all tools should work."</p>
+                    <div class="testimonial-author">Jordan P.</div>
+                    <div class="testimonial-title">Frontend Developer</div>
+                </div>
+
+                <div class="testimonial">
+                    <p class="testimonial-quote">"CAMI tells me when agent updates are available and exactly which projects need updating. No more wondering if I'm using the latest version."</p>
+                    <div class="testimonial-author">Casey L.</div>
+                    <div class="testimonial-title">Tech Lead</div>
+                </div>
+            </div>
+
+            <div class="testimonial-disclaimer">
+                <p><strong>Full transparency:</strong> These aren't real quotes. Our content-strategist agent generated these on the first pass and they were too good not to use. We're launching soon and hope real developers will actually say things like this.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="section section-alt">
+        <div class="container text-center">
+            <h2 class="section-title">Get Started Now</h2>
+            <p class="section-subtitle" style="margin-bottom: var(--spacing-8);">Stop copy-pasting agent files. Start creating, organizing, and sharing them like infrastructure.</p>
+
+            <div class="cta-buttons">
+                <a href="https://github.com/lando-labs/cami/releases/latest" class="btn btn-ocean btn-lg">Download CAMI v0.3.0</a>
+                <a href="https://github.com/lando-labs/cami" class="btn btn-secondary" style="color: var(--color-ocean-medium); border-color: var(--color-ocean-medium);">View on GitHub</a>
+            </div>
+
+            <p style="margin-top: var(--spacing-8); color: var(--color-text-tertiary);">Within minutes, you'll have agent creation tools, clean organization, and the power to build or share your own agent libraries.</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>CAMI</h4>
+                    <p style="color: var(--color-neutral-500); font-size: var(--font-size-sm);">Claude Agent Management Interface. Manage your Claude Code agent guild.</p>
+                </div>
+
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/lando-labs/cami">GitHub Repository</a></li>
+                        <li><a href="https://github.com/lando-labs/cami/blob/main/README.md">Documentation</a></li>
+                        <li><a href="https://github.com/lando-labs/cami/releases">Releases</a></li>
+                        <li><a href="https://github.com/lando-labs/cami/blob/main/CLAUDE.md">MCP Tools Reference</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/lando-labs/cami/issues">Bug Reports</a></li>
+                        <li><a href="https://github.com/lando-labs/cami/discussions">Discussions</a></li>
+                        <li><a href="https://github.com/lando-labs/cami/blob/main/CONTRIBUTING.md">Contributing</a></li>
+                        <li><a href="https://twitter.com/lando_labs">Twitter</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://github.com/lando-labs/cami/blob/main/LICENSE">MIT License</a></li>
+                        <li><a href="https://github.com/lando-labs">Lando Labs</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>Built by <a href="https://github.com/lando-labs">Lando Labs</a> for <a href="https://claude.ai/download" target="_blank">Claude Code</a> | MIT License | v0.3.0</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

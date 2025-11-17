@@ -67,9 +67,9 @@ fi
 # Look for binary (either in current dir during build or in releases)
 BINARY_PATH=""
 if [ -f "$SCRIPT_DIR/../cami" ]; then
-    BINARY_PATH="$SCRIPT_DIR/../cami"
+    BINARY_PATH="$(cd "$SCRIPT_DIR/.." && pwd)/cami"
 elif [ -f "$SCRIPT_DIR/cami" ]; then
-    BINARY_PATH="$SCRIPT_DIR/cami"
+    BINARY_PATH="$(cd "$SCRIPT_DIR" && pwd)/cami"
 else
     print_error "CAMI binary not found. Please run 'make build' first or download a release."
     exit 1
@@ -104,6 +104,10 @@ cp "$TEMPLATE_DIR/README.md" "$INSTALL_DIR/"
 cp "$TEMPLATE_DIR/.gitignore" "$INSTALL_DIR/"
 cp "$TEMPLATE_DIR/.mcp.json" "$INSTALL_DIR/"
 
+# Deploy agent-architect (the only bundled agent)
+print_info "Deploying agent-architect..."
+cp "$TEMPLATE_DIR/agent-architect.md" "$INSTALL_DIR/.claude/agents/"
+
 # Create initial config if it doesn't exist
 if [ ! -f "$INSTALL_DIR/config.yaml" ]; then
     print_info "Creating initial config.yaml..."
@@ -125,6 +129,12 @@ print_success "CAMI workspace created at $INSTALL_DIR"
 
 # Install binary
 print_info "Installing CAMI binary to $BIN_DIR..."
+
+# Create bin directory if it doesn't exist
+if [ ! -d "$BIN_DIR" ]; then
+    print_info "Creating $BIN_DIR directory..."
+    sudo mkdir -p "$BIN_DIR"
+fi
 
 if [ ! -w "$BIN_DIR" ]; then
     print_info "Need sudo permissions to install to $BIN_DIR"
