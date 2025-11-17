@@ -119,6 +119,11 @@ cp "$TEMPLATE_DIR/.mcp.json" "$INSTALL_DIR/"
 print_info "Deploying agent-architect..."
 cp "$TEMPLATE_DIR/agent-architect.md" "$INSTALL_DIR/.claude/agents/"
 
+# Copy .camiignore template to my-agents source
+if [ ! -f "$INSTALL_DIR/sources/my-agents/.camiignore" ]; then
+    cp "$TEMPLATE_DIR/.camiignore" "$INSTALL_DIR/sources/my-agents/"
+fi
+
 # Create initial config if it doesn't exist
 if [ ! -f "$INSTALL_DIR/config.yaml" ]; then
     print_info "Creating initial config.yaml..."

@@ -81,6 +81,7 @@ cami locations list
 Agents are organized in `sources/` directory:
 
 - **my-agents/** - Your custom agents (tracked in git if you initialize this directory)
+  - Includes a `.camiignore` file to exclude non-agent files from loading
 - **official-agents/** - Official agent library (pulled from remote)
 - **team-agents/** - Your team's shared agents (pulled from remote)
 
@@ -107,6 +108,20 @@ When the same agent exists in multiple sources, **lower priority number wins**:
 - Priority 100 = Lowest (fallback defaults)
 
 Example: If "frontend" agent exists in both `my-agents` (priority 10) and `official-agents` (priority 100), the version from `my-agents` is used.
+
+### Excluding Files with .camiignore
+
+Each source directory can have a `.camiignore` file (like `.gitignore`) to exclude files from agent loading:
+
+```
+# sources/my-agents/.camiignore
+README.md
+*.txt
+templates/
+*-draft.md
+```
+
+The `my-agents/` directory includes a template `.camiignore` with common exclusions.
 
 ## Git Tracking (Optional)
 
