@@ -713,7 +713,7 @@ func registerMCPTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "add_source",
 		Description: "Add a new agent source by cloning a Git repository. " +
-			"The repository will be cloned to ~/cami-workspace/sources/<name>/ and added to configuration. " +
+			"The repository will be cloned to your CAMI workspace sources/ directory and added to configuration. " +
 			"Use this to add official agent libraries or team/company agent sources.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args AddSourceArgs) (*mcp.CallToolResult, any, error) {
 		name := args.Name
@@ -788,7 +788,7 @@ func registerMCPTools(server *mcp.Server) {
 			return nil, nil, fmt.Errorf("failed to save config: %w", err)
 		}
 
-		responseText := fmt.Sprintf("✓ Cloned %s to ~/cami-workspace/sources/%s\n", name, name)
+		responseText := fmt.Sprintf("✓ Cloned %s to %s/sources/%s\n", name, configDir, name)
 		responseText += fmt.Sprintf("✓ Added source with priority %d\n", priority)
 		responseText += fmt.Sprintf("✓ Found %d agents\n", agentCount)
 
@@ -1081,8 +1081,9 @@ func registerMCPTools(server *mcp.Server) {
 			responseText += "- CLI: `cami source add <git-url>`\n"
 			responseText += "- MCP: Use `mcp__cami__add_source` with your Git repository URL\n\n"
 			responseText += "This will:\n"
-			responseText += "1. Create `~/cami-workspace/` directory for global configuration\n"
-			responseText += "2. Clone the agent repository to `~/cami-workspace/sources/<name>/`\n"
+			configDir, _ := config.GetConfigDir()
+			responseText += fmt.Sprintf("1. Create `%s/` directory for global configuration\n", configDir)
+			responseText += fmt.Sprintf("2. Clone the agent repository to `%s/sources/<name>/`\n", configDir)
 			responseText += "3. Make agents available across all your projects\n\n"
 			responseText += "After adding a source, you can deploy agents to any project with `mcp__cami__deploy_agents`!\n"
 

@@ -14,7 +14,7 @@ func NewInitCommand() *cobra.Command {
 This command sets up:
   - Agent workspace directory (vc-agents/)
   - Default local source (my-agents/)
-  - Configuration file (~/cami-workspace/config.yaml)`,
+  - Configuration file ($CAMI_DIR/config.yaml, defaults to ~/cami-workspace/)`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return InitCommand()
 		},
