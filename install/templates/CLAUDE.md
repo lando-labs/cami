@@ -41,6 +41,7 @@ CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynami
 - **Priority System**: Lower numbers = higher priority (1 = highest, 100 = lowest)
 - **Global Storage**: All agents stored here in `sources/`, available to all projects
 - **Deployment**: Copy agents from sources to specific projects' `.claude/agents/` directories
+- **.camiignore**: Each source directory can have a `.camiignore` file (like `.gitignore`) to exclude files from agent loading
 
 ## Directory Structure
 
@@ -50,11 +51,12 @@ CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynami
 ├── .mcp.json                    # MCP server configuration
 ├── config.yaml                  # CAMI configuration
 ├── .claude/
-│   └── agents/                  # CAMI's own agents (qa, agent-architect)
+│   └── agents/                  # CAMI's own agents (agent-architect)
 ├── sources/                     # Agent sources
-│   ├── official-agents/        # Official agent library (if added)
-│   ├── team-agents/            # Your team's agents (if added)
-│   └── my-agents/              # Your custom agents
+│   ├── my-agents/              # Your custom agents
+│   │   └── .camiignore         # Exclude files from agent loading
+│   ├── team-agents/            # Team agents (if added)
+│   └── official-agents/        # Official library (if added)
 └── README.md                    # Quick start guide
 ```
 
@@ -128,6 +130,33 @@ deploy_locations:
 ```
 
 **Priority-based deduplication**: When the same agent exists in multiple sources, the lowest priority number wins.
+
+## Excluding Files with .camiignore
+
+Each source directory can have a `.camiignore` file to exclude files from agent loading:
+
+```
+# sources/my-agents/.camiignore
+README.md
+LICENSE.md
+*.txt
+templates/
+*-draft.md
+*-wip.md
+.git/
+.DS_Store
+```
+
+**How it works:**
+- Similar to `.gitignore` - supports glob patterns
+- Excludes documentation, drafts, templates, and non-agent files
+- The `my-agents/` directory includes a template `.camiignore` with common exclusions
+- Add `.camiignore` to any source directory to customize what gets loaded
+
+**Use cases:**
+- Keep drafts in progress without them being loaded as agents
+- Store templates and examples alongside real agents
+- Maintain documentation in the same directory as agents
 
 ## Git Tracking (Optional)
 
