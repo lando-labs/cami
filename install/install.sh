@@ -166,6 +166,18 @@ echo ""
 echo "📂 CAMI workspace: $INSTALL_DIR"
 echo "🔧 Binary location: $BIN_DIR/cami"
 echo ""
+
+# If using custom location, inform user about CAMI_DIR
+if [ "$INSTALL_DIR" != "$HOME/cami-workspace" ]; then
+    echo "⚠️  Custom workspace location detected!"
+    echo ""
+    echo "  Add this to your ~/.zshrc or ~/.bashrc:"
+    echo "     export CAMI_DIR=\"$INSTALL_DIR\""
+    echo ""
+    echo "  Then restart your terminal or run: source ~/.zshrc"
+    echo ""
+fi
+
 echo "Next steps:"
 echo ""
 echo "  1. Open your CAMI workspace:"

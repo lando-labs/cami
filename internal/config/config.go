@@ -43,7 +43,14 @@ const (
 )
 
 // GetConfigDir returns the path to the config directory
+// Respects CAMI_DIR environment variable for custom workspace location
 func GetConfigDir() (string, error) {
+	// Check for custom CAMI_DIR environment variable first
+	if camiDir := os.Getenv("CAMI_DIR"); camiDir != "" {
+		return camiDir, nil
+	}
+
+	// Fall back to default ~/cami-workspace
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
