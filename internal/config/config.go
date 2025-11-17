@@ -38,7 +38,7 @@ type DeployLocation struct {
 }
 
 const (
-	configDirName  = ".cami"
+	configDirName  = "cami-workspace"
 	configFileName = "config.yaml"
 )
 

@@ -45,7 +45,7 @@ CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynami
 ## Directory Structure
 
 ```
-~/cami/                          # Your CAMI workspace
+~/cami-workspace/                          # Your CAMI workspace
 ├── CLAUDE.md                    # This file
 ├── .mcp.json                    # MCP server configuration
 ├── config.yaml                  # CAMI configuration
@@ -109,14 +109,14 @@ version: "1"
 agent_sources:
   - name: my-agents
     type: local
-    path: ~/cami/sources/my-agents
+    path: ~/cami-workspace/sources/my-agents
     priority: 10         # Highest priority (your overrides)
     git:
       enabled: false
 
   - name: official-agents
     type: local
-    path: ~/cami/sources/official-agents
+    path: ~/cami-workspace/sources/official-agents
     priority: 100        # Lower priority (defaults)
     git:
       enabled: true
@@ -134,7 +134,7 @@ deploy_locations:
 You can track this workspace with Git to share your CAMI setup with your team:
 
 ```bash
-cd ~/cami
+cd ~/cami-workspace
 git init
 git add .
 git commit -m "Initial CAMI setup"

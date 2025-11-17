@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__cami__list_agents",
+      "SlashCommand(/cami-new-agent:*)",
+      "mcp__lando-design-system__get_design_tokens",
+      "Bash(open index.html)",
+      "mcp__filesystem__read_media_file",
+      "Bash(make install:*)",
+      "Bash(cami --version:*)",
+      "Bash(./cami:*)",
+      "Bash(brew:*)",
+      "Bash(echo:*)",
+      "Bash([ -d ~/.local/bin ])",
+      "Bash(make package:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: add landing page and fix installation\n\n- Add index.html GitHub Pages landing page with Agent Architect section\n- Add cami-logo.png branding\n- Fix install.sh to create /usr/local/bin if it doesn''t exist\n- Fix install.sh to use absolute paths for sudo cp\n- Bundle agent-architect.md in installation templates\n- Update CLAUDE.md to clarify Claude Code agents (not generic AI)\n- Maintain \"agent guild\" metaphor with Claude Code specificity\n\nLanding page features:\n- Three-phase methodology explanation (Research/Analyze, Build/Core Action, Follow-up/Maintain)\n- Philosophy-driven design with QA agent example\n- Tech stack awareness and customization guidance\n- Claude Code attribution in footer\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "Bash(gh api:*)",
+      "Bash(git clone:*)",
+      "Bash(shasum:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enabledMcpjsonServers": [
+    "cami"
+  ]
+}

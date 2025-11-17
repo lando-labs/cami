@@ -39,7 +39,7 @@ CAMI will guide you through adding agent sources and configuring your setup.
 ## Directory Structure
 
 ```
-~/cami/
+~/cami-workspace/
 ├── CLAUDE.md                    # CAMI documentation and Claude context
 ├── .mcp.json                    # MCP server configuration (local to this directory)
 ├── config.yaml                  # CAMI configuration
@@ -142,7 +142,7 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-This makes CAMI's MCP tools available in all projects while still using the agent sources configured here in `~/cami/`.
+This makes CAMI's MCP tools available in all projects while still using the agent sources configured here in `~/cami-workspace/`.
 
 ## Getting Help
 

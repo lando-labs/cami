@@ -741,7 +741,7 @@ CAMI: *uses agent-architect to design specialized agent*
       ✓ Created payment-integration agent (v1.0.0)
 
 # Phase 2: Clean organization
-~/cami/sources/
+~/cami-workspace/sources/
 ├── team-agents/         # Company agents (Git)
 └── my-agents/           # Personal overrides (local)
 
@@ -870,11 +870,11 @@ CAMI: ✓ Deployed frontend (v1.1.0)
                 <div class="feature-card">
                     <div class="feature-icon">1</div>
                     <h3 class="feature-title">Install & Initialize</h3>
-                    <p class="feature-description">Download and run the installer. Creates ~/cami/ workspace with clean directory structure. Binary goes on your PATH for global access.</p>
+                    <p class="feature-description">Download and run the installer. Creates ~/cami-workspace/ workspace with clean directory structure. Binary goes on your PATH for global access.</p>
                     <div class="code-block mt-8">
                         <pre><code>$ make install
 
-✓ Created ~/cami/ workspace
+✓ Created ~/cami-workspace/ workspace
 ✓ Installed to /usr/local/bin/cami
 Ready to use!</code></pre>
                     </div>
@@ -1024,7 +1024,7 @@ Good tests make code fearlessly maintainable.
             <!-- Call to Action -->
             <div style="text-align: center; margin-top: 3rem;">
                 <p style="font-size: var(--font-size-lg); color: var(--color-neutral-700); margin-bottom: 1.5rem;">
-                    Agent-architect ships with CAMI and deploys automatically to <code>~/cami/.claude/agents/</code>
+                    Agent-architect ships with CAMI and deploys automatically to <code>~/cami-workspace/.claude/agents/</code>
                 </p>
                 <a href="#installation" class="btn-primary">Get Started with CAMI</a>
             </div>
@@ -1060,7 +1060,7 @@ cd cami-0.3.0-darwin-arm64
 ./install.sh
 
 # Open CAMI workspace
-cd ~/cami
+cd ~/cami-workspace
 claude
 
 # Ask Claude to help you get started

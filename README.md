@@ -7,7 +7,7 @@ CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynami
 ## Features
 
 - **13 MCP Tools**: Native Claude Code integration for agent management
-- **Global Agent Storage**: Single source of truth at `~/cami/sources/`
+- **Global Agent Storage**: Single source of truth at `~/cami-workspace/sources/`
 - **Priority-Based Deduplication**: Override agents with custom versions (lower priority number = higher precedence)
 - **Smart Documentation**: Automatic CLAUDE.md updates with deployed agent information
 - **Version Tracking**: Compare deployed versions with available updates
@@ -32,14 +32,14 @@ make install
 ```
 
 This creates:
-- `~/cami/` - Your CAMI workspace
+- `~/cami-workspace/` - Your CAMI workspace
 - `/usr/local/bin/cami` - Binary on your PATH
 
 ### First-Time Setup
 
 ```bash
 # Open your CAMI workspace
-cd ~/cami
+cd ~/cami-workspace
 claude
 
 # Ask Claude to help you get started
@@ -76,7 +76,7 @@ $ cami scan ~/projects/my-app
 ### Workspace Structure
 
 ```
-~/cami/                          # Your CAMI workspace
+~/cami-workspace/                          # Your CAMI workspace
 ├── CLAUDE.md                    # CAMI documentation and persona
 ├── README.md                    # Quick start guide
 ├── .mcp.json                    # MCP server configuration
@@ -226,7 +226,7 @@ docs/
 ### Working in Your CAMI Workspace
 
 ```bash
-cd ~/cami
+cd ~/cami-workspace
 claude
 
 # Natural language interface
@@ -241,7 +241,7 @@ claude
 Track your CAMI workspace to share setup with your team:
 
 ```bash
-cd ~/cami
+cd ~/cami-workspace
 git init
 git add .
 git commit -m "Initial CAMI setup"
@@ -279,7 +279,7 @@ cami locations remove <name>        # Remove location
 
 ### Global MCP Setup (Optional)
 
-To use CAMI from any Claude Code session (not just ~/cami/):
+To use CAMI from any Claude Code session (not just ~/cami-workspace/):
 
 Add to `~/.claude/settings.json`:
 
@@ -352,18 +352,18 @@ make test
 # Run linters
 make lint
 
-# Install locally (creates ~/cami/ workspace)
+# Install locally (creates ~/cami-workspace/ workspace)
 make install
 ```
 
 ### Testing User Experience
 
 ```bash
-# Install to ~/cami/
+# Install to ~/cami-workspace/
 make install
 
 # Test user workspace
-cd ~/cami
+cd ~/cami-workspace
 claude
 
 # Ask: "Help me get started with CAMI"

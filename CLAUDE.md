@@ -31,7 +31,7 @@ This is the CAMI development repository. You are working on the Go codebase that
 - Run `make lint` for code quality checks
 - Use deployed agents (qa, agent-architect) for development tasks
 
-**Remember:** This is the CAMI source code repo. Users install CAMI via releases and get a clean `~/cami/` workspace with templates from `install/templates/`.
+**Remember:** This is the CAMI source code repo. Users install CAMI via releases and get a clean `~/cami-workspace/` workspace with templates from `install/templates/`.
 
 ---
 
@@ -52,10 +52,10 @@ $ cami scan ~/projects/my-app
 
 ### User Workspace Structure
 
-CAMI creates a user workspace at `~/cami/` during installation:
+CAMI creates a user workspace at `~/cami-workspace/` during installation:
 
 ```
-~/cami/                          # User workspace (created by installer)
+~/cami-workspace/                          # User workspace (created by installer)
 ├── CLAUDE.md                    # User-facing CAMI documentation
 ├── README.md                    # User quick start guide
 ├── .mcp.json                    # Local MCP config
@@ -74,19 +74,19 @@ CAMI creates a user workspace at `~/cami/` during installation:
 **Key Concepts:**
 - User workspace is separate from source code repo
 - Templates live in `install/templates/` in this repo
-- Installer copies templates to `~/cami/` during setup
-- Users can optionally track `~/cami/` with Git
+- Installer copies templates to `~/cami-workspace/` during setup
+- Users can optionally track `~/cami-workspace/` with Git
 
 ### Configuration Format
 
-User's `~/cami/config.yaml`:
+User's `~/cami-workspace/config.yaml`:
 
 ```yaml
 version: "1"
 agent_sources:
   - name: team-agents
     type: local
-    path: ~/cami/sources/team-agents
+    path: ~/cami-workspace/sources/team-agents
     priority: 50
     git:
       enabled: true
@@ -94,7 +94,7 @@ agent_sources:
 
   - name: my-agents
     type: local
-    path: ~/cami/sources/my-agents
+    path: ~/cami-workspace/sources/my-agents
     priority: 10
     git:
       enabled: false
@@ -137,7 +137,7 @@ make release-all
 # Package releases with installer
 make package
 
-# Install locally (creates ~/cami/ workspace)
+# Install locally (creates ~/cami-workspace/ workspace)
 make install
 ```
 
@@ -152,7 +152,7 @@ make lint
 
 # Test installation
 make install
-cd ~/cami
+cd ~/cami-workspace
 claude  # Test user experience
 ```
 
@@ -173,7 +173,7 @@ install/
 When modifying the user experience:
 - Update templates in `install/templates/`
 - Update installer in `install/install.sh`
-- Test with `make install` and check `~/cami/`
+- Test with `make install` and check `~/cami-workspace/`
 
 ## Project Structure
 
