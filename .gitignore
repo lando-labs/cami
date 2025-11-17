@@ -28,8 +28,5 @@ go.work
 firebase-debug.log
 .firebase/
 
-# Config (user-specific)
-.cami.json
-
 # Internal reference documentation (not for open source release)
 reference/
