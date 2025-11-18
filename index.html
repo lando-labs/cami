@@ -258,6 +258,17 @@
             text-align: center;
         }
 
+        .hero-logo {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto var(--spacing-8);
+            display: block;
+            border-radius: 50%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            padding: var(--spacing-2);
+        }
+
         .hero h1 {
             font-size: var(--font-size-5xl);
             color: var(--color-text-inverse);
@@ -612,6 +623,11 @@
                 padding: var(--spacing-16) 0 var(--spacing-12);
             }
 
+            .hero-logo {
+                width: 120px;
+                height: 120px;
+            }
+
             .hero h1 {
                 font-size: var(--font-size-3xl);
             }
@@ -677,6 +693,7 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container hero-content">
+            <img src="cami-logo.png" alt="CAMI Logo" class="hero-logo">
             <h1>Your AI Agent Guild Headquarters</h1>
             <p class="hero-subtitle">Create specialized Claude Code agents from requirements, organize them in a clean workspace, and share them across your team. CAMI handles everything through natural language.</p>
 
