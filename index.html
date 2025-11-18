@@ -598,6 +598,40 @@
             font-size: var(--font-size-sm);
         }
 
+        /* Coming Soon Badge */
+        .coming-soon-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: var(--color-text-inverse);
+            padding: var(--spacing-2) var(--spacing-5);
+            border-radius: 999px;
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--spacing-6);
+            backdrop-filter: blur(10px);
+        }
+
+        .coming-soon-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background-color: #4ADE80;
+            border-radius: 50%;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
         /* Utility Classes */
         .text-center {
             text-align: center;
@@ -683,9 +717,7 @@
                 <a href="#features">Features</a>
                 <a href="#how-it-works">How It Works</a>
                 <a href="#agent-architect">Agent Architect</a>
-                <a href="#installation">Installation</a>
                 <a href="#testimonials">Testimonials</a>
-                <a href="https://github.com/lando-labs/cami">GitHub</a>
             </nav>
         </div>
     </header>
@@ -694,6 +726,7 @@
     <section class="hero">
         <div class="container hero-content">
             <img src="cami-logo.png" alt="CAMI Logo" class="hero-logo">
+            <div class="coming-soon-badge">Coming Soon</div>
             <h1>Your AI Agent Guild Headquarters</h1>
             <p class="hero-subtitle">Create specialized Claude Code agents from requirements, organize them in a clean workspace, and share them across your team. CAMI handles everything through natural language.</p>
 
@@ -709,11 +742,6 @@ CAMI: ✓ Created project at ~/projects/meditation-app
       ✓ Deployed 5 specialized agents
       ✓ Generated CLAUDE.md with project vision
       Ready to build!</code></pre>
-            </div>
-
-            <div class="cta-buttons">
-                <a href="#installation" class="btn btn-primary btn-lg">Download v0.3.0</a>
-                <a href="https://github.com/lando-labs/cami" class="btn btn-secondary btn-lg">View on GitHub</a>
             </div>
         </div>
     </section>
@@ -1040,56 +1068,13 @@ Good tests make code fearlessly maintainable.
 
             <!-- Call to Action -->
             <div style="text-align: center; margin-top: 3rem;">
-                <p style="font-size: var(--font-size-lg); color: var(--color-neutral-700); margin-bottom: 1.5rem;">
-                    Agent-architect ships with CAMI and deploys automatically to <code>~/cami-workspace/.claude/agents/</code>
+                <p style="font-size: var(--font-size-lg); color: var(--color-neutral-700);">
+                    Agent-architect will ship with CAMI and deploy automatically to <code>~/cami-workspace/.claude/agents/</code>
                 </p>
-                <a href="#installation" class="btn-primary">Get Started with CAMI</a>
             </div>
         </div>
     </section>
 
-    <!-- Installation Section -->
-    <section id="installation" class="section">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Installation</h2>
-                <p class="section-subtitle">One-click download for all platforms</p>
-            </div>
-
-            <div class="cta-primary">
-                <a href="https://github.com/lando-labs/cami/releases/latest" class="btn btn-ocean btn-lg">
-                    <svg class="icon" viewBox="0 0 24 24">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Download for Your Platform
-                </a>
-                <p class="supporting-text">
-                    Available for macOS (Intel & Apple Silicon), Linux (x64 & ARM), Windows (x64 & ARM)
-                </p>
-            </div>
-
-            <div class="code-block mt-8" style="max-width: 600px; margin-left: auto; margin-right: auto;">
-                <pre><code># Extract and Install
-tar -xzf cami-0.3.0-darwin-arm64.tar.gz
-cd cami-0.3.0-darwin-arm64
-./install.sh
-
-# Open CAMI workspace
-cd ~/cami-workspace
-claude
-
-# Ask Claude to help you get started
-"Help me get started with CAMI"</code></pre>
-            </div>
-
-            <div class="text-center mt-8">
-                <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-4);">Or build from source with Go 1.21+</p>
-                <a href="https://github.com/lando-labs/cami#installation" class="btn btn-ocean">Build Instructions</a>
-            </div>
-        </div>
-    </section>
 
     <!-- Testimonials Section -->
     <section id="testimonials" class="section">
@@ -1137,61 +1122,12 @@ claude
         </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="section section-alt">
-        <div class="container text-center">
-            <h2 class="section-title">Get Started Now</h2>
-            <p class="section-subtitle" style="margin-bottom: var(--spacing-8);">Stop copy-pasting agent files. Start creating, organizing, and sharing them like infrastructure.</p>
-
-            <div class="cta-buttons">
-                <a href="https://github.com/lando-labs/cami/releases/latest" class="btn btn-ocean btn-lg">Download CAMI v0.3.0</a>
-                <a href="https://github.com/lando-labs/cami" class="btn btn-secondary" style="color: var(--color-ocean-medium); border-color: var(--color-ocean-medium);">View on GitHub</a>
-            </div>
-
-            <p style="margin-top: var(--spacing-8); color: var(--color-text-tertiary);">Within minutes, you'll have agent creation tools, clean organization, and the power to build or share your own agent libraries.</p>
-        </div>
-    </section>
 
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="footer-grid">
-                <div class="footer-section">
-                    <h4>CAMI</h4>
-                    <p style="color: var(--color-neutral-500); font-size: var(--font-size-sm);">Claude Agent Management Interface. Manage your Claude Code agent guild.</p>
-                </div>
-
-                <div class="footer-section">
-                    <h4>Resources</h4>
-                    <ul class="footer-links">
-                        <li><a href="https://github.com/lando-labs/cami">GitHub Repository</a></li>
-                        <li><a href="https://github.com/lando-labs/cami/blob/main/README.md">Documentation</a></li>
-                        <li><a href="https://github.com/lando-labs/cami/releases">Releases</a></li>
-                        <li><a href="https://github.com/lando-labs/cami/blob/main/CLAUDE.md">MCP Tools Reference</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-section">
-                    <h4>Support</h4>
-                    <ul class="footer-links">
-                        <li><a href="https://github.com/lando-labs/cami/issues">Bug Reports</a></li>
-                        <li><a href="https://github.com/lando-labs/cami/discussions">Discussions</a></li>
-                        <li><a href="https://github.com/lando-labs/cami/blob/main/CONTRIBUTING.md">Contributing</a></li>
-                        <li><a href="https://twitter.com/lando_labs">Twitter</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-section">
-                    <h4>Legal</h4>
-                    <ul class="footer-links">
-                        <li><a href="https://github.com/lando-labs/cami/blob/main/LICENSE">MIT License</a></li>
-                        <li><a href="https://github.com/lando-labs">Lando Labs</a></li>
-                    </ul>
-                </div>
-            </div>
-
             <div class="footer-bottom">
-                <p>Built by <a href="https://github.com/lando-labs">Lando Labs</a> for <a href="https://claude.ai/download" target="_blank">Claude Code</a> | MIT License | v0.3.0</p>
+                <p>Built by Lando Labs for <a href="https://claude.ai/download" target="_blank">Claude Code</a> | Coming Soon</p>
             </div>
         </div>
     </footer>
