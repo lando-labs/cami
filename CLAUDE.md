@@ -200,7 +200,14 @@ cami/
 
 ## MCP Tools Reference
 
-CAMI provides 12 MCP tools for Claude Code to manage agents. These tools enable natural language workflows like "Add the frontend agent to this project" or "What agents do I have?".
+CAMI provides 19 MCP tools for Claude Code to manage agents. These tools enable natural language workflows like "Add the frontend agent to this project" or "What agents do I have?".
+
+**Tool Categories**:
+- **Core Agent Management** (4 tools): Deploy, scan, list, and document agents
+- **Source Management** (4 tools): Add, update, list, and check status of agent sources
+- **Location Management** (3 tools): Track project directories for deployment
+- **Normalization** (7 tools): Analyze and fix source/project compliance
+- **Onboarding** (1 tool): Get personalized setup guidance
 
 ### Core Agent Management
 
@@ -281,8 +288,8 @@ Claude: *uses mcp__cami__update_claude_md*
 
 ### Source Management
 
-#### 5. `mcp__cami__list_sources`
-**Purpose**: List all configured agent sources
+#### 5. `mcp__cami__list_sources` (Updated with Compliance Checking)
+**Purpose**: List all configured agent sources with compliance status
 **Use when**: User asks "where are my agents from?" or wants to see sources
 **Returns**: For each source:
 - Name and type
@@ -290,22 +297,27 @@ Claude: *uses mcp__cami__update_claude_md*
 - Priority (for deduplication)
 - Number of agents
 - Git information (remote URL, status)
+- **NEW**: Compliance status (✓ compliant or ⚠️ issues)
+- **NEW**: Issue summary if non-compliant
 
 **Example context**:
 ```
 User: "Show me my agent sources"
 Claude: *uses mcp__cami__list_sources*
 "You have 2 agent sources:
- 1. lando-agents (100 priority) - 29 agents
-    Path: ~/cami-workspace/sources/lando-agents
-    Git: git@github.com:lando-labs/lando-agents.git
- 2. my-agents (200 priority) - 5 agents
-    Path: ~/cami-workspace/sources/my-agents
-    Git: Not configured"
+ • ✓ lando-agents (priority 100) - 29 agents
+   Path: ~/cami-workspace/sources/lando-agents
+   Git: git@github.com:lando-labs/lando-agents.git (clean)
+   Compliance: ✓ Compliant
+
+ • ⚠️ team-agents (priority 50) - 15 agents
+   Path: ~/cami-workspace/sources/team-agents
+   Git: Not configured
+   Compliance: ⚠️ Issues (no .camiignore, 3 agents with issues)"
 ```
 
-#### 6. `mcp__cami__add_source`
-**Purpose**: Add a new agent source by cloning a Git repository
+#### 6. `mcp__cami__add_source` (Updated with Auto-Detection)
+**Purpose**: Add a new agent source by cloning a Git repository with automatic compliance detection
 **Use when**: User wants to add official agents, company sources, or team libraries
 **Parameters**:
 - `url` (string, required) - Git URL (SSH or HTTPS)
@@ -316,14 +328,27 @@ Claude: *uses mcp__cami__list_sources*
 - Clones repository to `~/cami-workspace/sources/<name>/`
 - Updates `~/cami-workspace/config.yaml`
 - Scans for agents in cloned repository
-- Returns agent count and source info
+- **NEW**: Automatically checks compliance after cloning
+- **NEW**: Reports issues if source is non-compliant
+- **NEW**: Recommends using `normalize_source` to fix issues
 
 **Example context**:
 ```
 User: "Add the official Lando agent library"
 Claude: *uses mcp__cami__add_source with git@github.com:lando-labs/lando-agents.git*
 "✓ Cloned lando-agents to ~/cami-workspace/sources/lando-agents
- ✓ Found 29 agents"
+ ✓ Found 29 agents
+
+ ## Source Compliance Check
+
+ ⚠️ **This source has compliance issues:**
+
+ - Missing .camiignore file
+ - 3 agents with issues:
+   - frontend.md: missing version
+   - backend.md: missing version, missing description
+
+ **Recommendation:** Use `normalize_source` to fix these issues automatically."
 ```
 
 #### 7. `mcp__cami__update_source`
@@ -438,6 +463,279 @@ Claude: *uses mcp__cami__onboard*
 "✓ Added lando-agents (29 agents available)
  Which agents would you like to add to your project?"
 ```
+
+---
+
+### Normalization (Phase 1 Complete - NEW!)
+
+CAMI's normalization system ensures agent sources and projects follow CAMI standards for tracking, versioning, and deployment management.
+
+#### 13. `mcp__cami__detect_source_state`
+**Purpose**: Analyze an agent source for CAMI compliance
+**Use when**: Need to check if a source follows CAMI standards before normalization
+**Parameters**:
+- `source_name` (string, required) - Name of the source to analyze
+
+**Returns**:
+- Source path and agent count
+- Compliance status (true/false)
+- List of issues (missing versions, descriptions, names)
+- Missing .camiignore indicator
+- Recommended actions
+
+**Example context**:
+```
+User: "Check if my team-agents source is compliant"
+Claude: *uses mcp__cami__detect_source_state*
+"# Source Analysis: team-agents
+
+**Path:** ~/cami-workspace/sources/team-agents
+**Agent Count:** 15
+**Compliant:** false
+
+⚠️ Missing .camiignore file
+
+## Issues Found (3)
+
+**frontend.md:**
+  - missing version
+
+**backend.md:**
+  - missing version
+  - missing description
+
+## Recommended Action
+
+Use `normalize_source` to fix these issues automatically."
+```
+
+---
+
+#### 14. `mcp__cami__normalize_source`
+**Purpose**: Fix source agents to meet CAMI standards
+**Use when**: Source has compliance issues that need to be fixed
+**Parameters**:
+- `source_name` (string, required) - Source to normalize
+- `add_versions` (boolean, optional) - Add v1.0.0 to agents missing versions
+- `add_descriptions` (boolean, optional) - Add description placeholders
+- `create_camiignore` (boolean, optional) - Create .camiignore file
+
+**Features**:
+- Creates backup before making changes
+- Adds missing versions (default: v1.0.0)
+- Adds description placeholders ("Description for X agent")
+- Creates .camiignore with common patterns
+- Reports all changes made
+
+**Example context**:
+```
+User: "Fix the issues in my team-agents source"
+Claude: *uses mcp__cami__normalize_source with add_versions=true, create_camiignore=true*
+"# Source Normalization: team-agents
+
+**Status:** ✓ Success
+**Agents Updated:** 3
+**Backup Created:** ~/cami-workspace/sources/.cami-backup-20251118-143000
+
+## Changes Made
+
+- Added version 1.0.0 to frontend.md
+- Added version 1.0.0 to backend.md
+- Added description placeholder to backend.md
+- Created .camiignore file"
+```
+
+---
+
+#### 15. `mcp__cami__detect_project_state`
+**Purpose**: Analyze a project's normalization state
+**Use when**: Need to understand project's CAMI integration level
+**Parameters**:
+- `project_path` (string, required) - Path to project directory
+
+**Returns**:
+- Project state (non-cami, cami-aware, cami-legacy, cami-native)
+- Agents directory presence
+- Manifest presence
+- Agent count and details
+- Version matching with sources
+- Upgrade availability
+- Normalization recommendations
+
+**Project States**:
+- `non-cami`: No `.claude/agents/` directory
+- `cami-aware`: Has agents but no manifest
+- `cami-legacy`: Has old CAMI format manifest
+- `cami-native`: Fully normalized with current manifest format
+
+**Example context**:
+```
+User: "What's the state of this project?"
+Claude: *uses mcp__cami__detect_project_state with current directory*
+"# Project Analysis
+
+**Path:** /Users/lando/projects/my-app
+**State:** cami-aware
+**Has Agents Directory:** true
+**Has Manifest:** false
+**Agent Count:** 3
+
+## Deployed Agents
+
+**frontend** (v1.0.0) - matches available-sources
+**backend** (v1.1.0) - matches available-sources (update available)
+**custom-agent** (no version) - not in sources
+
+## Recommendations
+
+✓ **Minimal normalization required:** Create manifests for tracking
+✓ **Standard normalization recommended:** Link agents to sources"
+```
+
+---
+
+#### 16. `mcp__cami__normalize_project`
+**Purpose**: Normalize project by creating manifests and linking agents
+**Use when**: Project needs manifest creation or source linking
+**Parameters**:
+- `project_path` (string, required) - Project directory path
+- `level` (string, required) - Normalization level: "minimal", "standard", or "full"
+
+**Normalization Levels**:
+- **minimal**: Create manifests only (basic tracking)
+- **standard**: Manifests + source links (recommended)
+- **full**: Complete rewrite with agent-architect (not yet implemented)
+
+**Features**:
+- Creates backup before normalization
+- Creates local manifest (`.claude/cami-manifest.yaml`)
+- Updates central manifest (`~/cami-workspace/deployments.yaml`)
+- Links agents to sources with priority tracking
+- Calculates content and metadata hashes
+- Detects agents needing upgrades
+- Provides undo capability via backup
+
+**Example context**:
+```
+User: "Normalize this project with standard tracking"
+Claude: *uses mcp__cami__normalize_project with level="standard"*
+"# Project Normalization
+
+**Status:** ✓ Success
+**State Before:** cami-aware
+**State After:** cami-native
+**Backup Created:** /Users/lando/projects/.cami-backup-20251118-143500
+
+## Changes Made
+
+- Created project manifest with source links
+
+**Undo available:** Use backup.RestoreFromBackup to revert changes"
+```
+
+---
+
+#### 17. `mcp__cami__cleanup_backups`
+**Purpose**: Clean up old backup directories
+**Use when**: Too many backups are consuming disk space
+**Parameters**:
+- `target_path` (string, required) - Path to directory with backups
+- `keep_recent` (number, optional) - Number of recent backups to keep (default: 3)
+
+**Features**:
+- Analyzes backup state before cleanup
+- Shows total backup count and size
+- Keeps N most recent backups
+- Removes older backups
+- Reports freed disk space
+- Lists remaining backups
+
+**Example context**:
+```
+User: "I have too many backups, clean them up"
+Claude: *uses mcp__cami__cleanup_backups with keep_recent=3*
+"# Backup Cleanup
+
+**Total Backups:** 15
+**Total Size:** 45.30 MB
+
+## Cleanup Results
+
+**Removed:** 12 backups
+**Freed:** 38.50 MB
+**Kept:** 3 backups
+
+**Remaining backups:**
+- .cami-backup-20251118-143500
+- .cami-backup-20251118-142000
+- .cami-backup-20251118-140000"
+```
+
+---
+
+#### 18. `mcp__cami__create_project`
+**Purpose**: Create a new project with proper CAMI setup
+**Use when**: User wants to start a new project with agents
+**Parameters**:
+- `name` (string, required) - Project name
+- `description` (string, required) - Project description
+- `agent_names` (array of strings, required) - Agents to deploy
+- `path` (string, optional) - Project path (defaults to current directory)
+- `vision_doc` (string, optional) - Vision document content
+
+**Workflow**:
+1. Gathers requirements from user
+2. Recommends agents based on requirements
+3. Creates project directory structure
+4. Deploys selected agents
+5. Creates initial manifest
+6. Writes vision document
+
+**Example context**:
+```
+User: "I want to create a new web app project"
+Claude: "Let me help you create a new project. What tech stack are you using?"
+User: "React frontend, Node.js backend"
+Claude: *uses mcp__cami__list_agents to find relevant agents*
+"I recommend these agents:
+ - frontend (for React development)
+ - backend (for Node.js APIs)
+ - qa (for testing)
+
+ Would you like to use these?"
+User: "Yes"
+Claude: *uses mcp__cami__create_project*
+"✓ Created project 'my-web-app'
+ ✓ Deployed 3 agents
+ ✓ Created manifest
+ ✓ Wrote vision document"
+```
+
+---
+
+#### 19. `mcp__cami__update_claude_md` (Enhanced)
+**Purpose**: Update project's CLAUDE.md with deployed agent documentation
+**Use when**: After deploying agents or normalizing project
+**Parameters**:
+- `target_path` (string, required) - Path to project directory
+
+**Behavior**:
+- Scans `.claude/agents/` directory
+- Reads frontmatter from each agent
+- Auto-generates "Deployed Agents" section
+- Preserves other sections
+- Creates CLAUDE.md if missing
+- **NEW**: Includes normalization status if manifest exists
+
+**Example context**:
+```
+User: "Update my docs"
+Claude: *uses mcp__cami__update_claude_md*
+"✓ Updated CLAUDE.md with 3 deployed agents
+ ✓ Added manifest tracking information"
+```
+
+---
 
 ## Common Workflows for Claude Code
 

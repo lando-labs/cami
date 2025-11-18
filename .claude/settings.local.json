@@ -28,7 +28,18 @@
       "Bash(build/cami-linux-arm64-v0.3.0-alpha.1-2-g697a936.tar.gz )",
       "Bash(build/cami-windows-amd64-v0.3.0-alpha.1-2-g697a936.tar.gz )",
       "Bash(build/cami-windows-arm64-v0.3.0-alpha.1-2-g697a936.tar.gz)",
-      "Bash(make test:*)"
+      "Bash(make test:*)",
+      "Bash(build/cami-darwin-amd64-v0.3.0-alpha.3.tar.gz )",
+      "Bash(build/cami-darwin-arm64-v0.3.0-alpha.3.tar.gz )",
+      "Bash(build/cami-linux-amd64-v0.3.0-alpha.3.tar.gz )",
+      "Bash(build/cami-linux-arm64-v0.3.0-alpha.3.tar.gz )",
+      "Bash(build/cami-windows-amd64-v0.3.0-alpha.3.tar.gz )",
+      "Bash(build/cami-windows-arm64-v0.3.0-alpha.3.tar.gz )",
+      "Bash(build/checksums.txt)",
+      "Bash(checksums.txt)",
+      "Bash(cat:*)",
+      "Bash(go test:*)",
+      "Bash(go build:*)"
     ],
     "deny": [],
     "ask": []

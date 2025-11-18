@@ -11,10 +11,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lando/cami/internal/agent"
+	"github.com/lando/cami/internal/backup"
 	"github.com/lando/cami/internal/cli"
 	"github.com/lando/cami/internal/config"
 	"github.com/lando/cami/internal/deploy"
 	"github.com/lando/cami/internal/docs"
+	"github.com/lando/cami/internal/normalize"
 	"github.com/lando/cami/internal/tui"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -228,12 +230,15 @@ type UpdateSourceArgs struct {
 }
 
 type SourceInfo struct {
-	Name       string `json:"name"`
-	Path       string `json:"path"`
-	Priority   int    `json:"priority"`
-	AgentCount int    `json:"agent_count"`
-	GitRemote  string `json:"git_remote,omitempty"`
-	GitEnabled bool   `json:"git_enabled"`
+	Name         string `json:"name"`
+	Path         string `json:"path"`
+	Priority     int    `json:"priority"`
+	AgentCount   int    `json:"agent_count"`
+	GitRemote    string `json:"git_remote,omitempty"`
+	GitEnabled   bool   `json:"git_enabled"`
+	IsCompliant  bool   `json:"is_compliant"`
+	IssueCount   int    `json:"issue_count,omitempty"`
+	IssuesSummary string `json:"issues_summary,omitempty"`
 }
 
 type ListSourcesResponse struct {
@@ -678,12 +683,37 @@ func registerMCPTools(server *mcp.Server) {
 					agentCount = len(agents)
 				}
 
+				// Check compliance status
+				analysis, err := normalize.AnalyzeSource(source.Name, source.Path)
+				isCompliant := false
+				issueCount := 0
+				issuesSummary := ""
+
+				if err == nil {
+					isCompliant = analysis.IsCompliant
+					issueCount = len(analysis.Issues)
+
+					if !isCompliant {
+						var issues []string
+						if analysis.MissingCAMIIgnore {
+							issues = append(issues, "no .camiignore")
+						}
+						if issueCount > 0 {
+							issues = append(issues, fmt.Sprintf("%d agents with issues", issueCount))
+						}
+						issuesSummary = strings.Join(issues, ", ")
+					}
+				}
+
 				sourceInfo := SourceInfo{
-					Name:       source.Name,
-					Path:       source.Path,
-					Priority:   source.Priority,
-					AgentCount: agentCount,
-					GitEnabled: source.Git != nil && source.Git.Enabled,
+					Name:          source.Name,
+					Path:          source.Path,
+					Priority:      source.Priority,
+					AgentCount:    agentCount,
+					GitEnabled:    source.Git != nil && source.Git.Enabled,
+					IsCompliant:   isCompliant,
+					IssueCount:    issueCount,
+					IssuesSummary: issuesSummary,
 				}
 
 				if source.Git != nil && source.Git.Enabled {
@@ -692,7 +722,13 @@ func registerMCPTools(server *mcp.Server) {
 
 				sourceInfos = append(sourceInfos, sourceInfo)
 
-				responseText += fmt.Sprintf("• %s (priority %d)\n", source.Name, source.Priority)
+				// Format response with compliance status
+				complianceIcon := "✓"
+				if !isCompliant {
+					complianceIcon = "⚠️"
+				}
+
+				responseText += fmt.Sprintf("• %s %s (priority %d)\n", complianceIcon, source.Name, source.Priority)
 				responseText += fmt.Sprintf("  Path: %s\n", source.Path)
 				responseText += fmt.Sprintf("  Agents: %d\n", agentCount)
 
@@ -700,7 +736,27 @@ func registerMCPTools(server *mcp.Server) {
 					responseText += fmt.Sprintf("  Git: %s\n", source.Git.Remote)
 				}
 
+				// Show compliance status
+				if isCompliant {
+					responseText += "  Compliance: ✓ Compliant\n"
+				} else {
+					responseText += fmt.Sprintf("  Compliance: ⚠️ Issues (%s)\n", issuesSummary)
+				}
+
 				responseText += "\n"
+			}
+
+			// Add summary at the end
+			compliantCount := 0
+			for _, info := range sourceInfos {
+				if info.IsCompliant {
+					compliantCount++
+				}
+			}
+
+			if compliantCount < len(sourceInfos) {
+				responseText += fmt.Sprintf("**Note:** %d/%d sources have compliance issues.\n", len(sourceInfos)-compliantCount, len(sourceInfos))
+				responseText += "Use `detect_source_state` and `normalize_source` to fix issues.\n"
 			}
 		}
 
@@ -790,7 +846,31 @@ func registerMCPTools(server *mcp.Server) {
 
 		responseText := fmt.Sprintf("✓ Cloned %s to %s/sources/%s\n", name, configDir, name)
 		responseText += fmt.Sprintf("✓ Added source with priority %d\n", priority)
-		responseText += fmt.Sprintf("✓ Found %d agents\n", agentCount)
+		responseText += fmt.Sprintf("✓ Found %d agents\n\n", agentCount)
+
+		// Auto-detect compliance
+		analysis, err := normalize.AnalyzeSource(name, targetPath)
+		if err == nil && !analysis.IsCompliant {
+			responseText += "## Source Compliance Check\n\n"
+			responseText += "⚠️ **This source has compliance issues:**\n\n"
+
+			if analysis.MissingCAMIIgnore {
+				responseText += "- Missing .camiignore file\n"
+			}
+
+			issueCount := len(analysis.Issues)
+			if issueCount > 0 {
+				responseText += fmt.Sprintf("- %d agents with issues:\n", issueCount)
+				for _, issue := range analysis.Issues {
+					responseText += fmt.Sprintf("  - %s: %s\n", issue.AgentFile, strings.Join(issue.Problems, ", "))
+				}
+			}
+
+			responseText += "\n**Recommendation:** Use `normalize_source` to fix these issues automatically.\n"
+			responseText += "This will add missing versions, descriptions, and create .camiignore.\n"
+		} else if err == nil {
+			responseText += "✓ **Source is fully compliant!**\n"
+		}
 
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
@@ -1180,6 +1260,324 @@ func registerMCPTools(server *mcp.Server) {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
 		}, &OnboardResponse{State: state}, nil
+	})
+
+	// Register detect_source_state tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "detect_source_state",
+		Description: "Analyze an agent source for CAMI compliance. " +
+			"Checks for missing versions, descriptions, and .camiignore file. " +
+			"Use after adding a new source or to audit existing sources.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		SourceName string `json:"source_name"`
+	}) (*mcp.CallToolResult, any, error) {
+		// Load config to get source path
+		cfg, err := config.Load()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Find source
+		source, err := cfg.GetAgentSource(args.SourceName)
+		if err != nil {
+			return nil, nil, fmt.Errorf("source not found: %w", err)
+		}
+
+		// Analyze source
+		analysis, err := normalize.AnalyzeSource(args.SourceName, source.Path)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to analyze source: %w", err)
+		}
+
+		// Format response
+		responseText := fmt.Sprintf("# Source Analysis: %s\n\n", args.SourceName)
+		responseText += fmt.Sprintf("**Path:** %s\n", analysis.Path)
+		responseText += fmt.Sprintf("**Agent Count:** %d\n", analysis.AgentCount)
+		responseText += fmt.Sprintf("**Compliant:** %v\n\n", analysis.IsCompliant)
+
+		if analysis.MissingCAMIIgnore {
+			responseText += "⚠️ Missing .camiignore file\n\n"
+		}
+
+		if len(analysis.Issues) > 0 {
+			responseText += fmt.Sprintf("## Issues Found (%d)\n\n", len(analysis.Issues))
+			for _, issue := range analysis.Issues {
+				responseText += fmt.Sprintf("**%s:**\n", issue.AgentFile)
+				for _, problem := range issue.Problems {
+					responseText += fmt.Sprintf("  - %s\n", problem)
+				}
+				responseText += "\n"
+			}
+
+			responseText += "## Recommended Action\n\n"
+			responseText += "Use `normalize_source` to fix these issues automatically.\n"
+		} else {
+			responseText += "✓ **All agents are compliant!**\n"
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, analysis, nil
+	})
+
+	// Register normalize_source tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "normalize_source",
+		Description: "Fix source agents to meet CAMI standards. " +
+			"Can add missing versions (v1.0.0), description placeholders, and create .camiignore. " +
+			"Creates backup before making changes.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		SourceName       string `json:"source_name"`
+		AddVersions      bool   `json:"add_versions"`
+		AddDescriptions  bool   `json:"add_descriptions"`
+		CreateCAMIIgnore bool   `json:"create_camiignore"`
+	}) (*mcp.CallToolResult, any, error) {
+		// Load config to get source path
+		cfg, err := config.Load()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Find source
+		source, err := cfg.GetAgentSource(args.SourceName)
+		if err != nil {
+			return nil, nil, fmt.Errorf("source not found: %w", err)
+		}
+
+		// Normalize source
+		options := normalize.SourceNormalizationOptions{
+			AddVersions:      args.AddVersions,
+			AddDescriptions:  args.AddDescriptions,
+			CreateCAMIIgnore: args.CreateCAMIIgnore,
+		}
+
+		result, err := normalize.NormalizeSource(args.SourceName, source.Path, options)
+		if err != nil {
+			return nil, nil, fmt.Errorf("normalization failed: %w", err)
+		}
+
+		// Format response
+		responseText := fmt.Sprintf("# Source Normalization: %s\n\n", args.SourceName)
+		responseText += fmt.Sprintf("**Status:** %s\n", func() string {
+			if result.Success {
+				return "✓ Success"
+			}
+			return "✗ Failed"
+		}())
+		responseText += fmt.Sprintf("**Agents Updated:** %d\n", result.AgentsUpdated)
+		responseText += fmt.Sprintf("**Backup Created:** %s\n\n", result.BackupPath)
+
+		if len(result.Changes) > 0 {
+			responseText += "## Changes Made\n\n"
+			for _, change := range result.Changes {
+				responseText += fmt.Sprintf("- %s\n", change)
+			}
+		} else {
+			responseText += "No changes were needed.\n"
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, result, nil
+	})
+
+	// Register detect_project_state tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "detect_project_state",
+		Description: "Analyze a project's normalization state. " +
+			"Detects project type (non-cami, cami-aware, cami-legacy, cami-native), " +
+			"checks for manifests, and provides normalization recommendations.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		ProjectPath string `json:"project_path"`
+	}) (*mcp.CallToolResult, any, error) {
+		// Load config to get available sources
+		cfg, err := config.Load()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Analyze project
+		analysis, err := normalize.AnalyzeProject(args.ProjectPath, cfg.AgentSources)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to analyze project: %w", err)
+		}
+
+		// Format response
+		responseText := fmt.Sprintf("# Project Analysis\n\n")
+		responseText += fmt.Sprintf("**Path:** %s\n", analysis.Path)
+		responseText += fmt.Sprintf("**State:** %s\n", analysis.State)
+		responseText += fmt.Sprintf("**Has Agents Directory:** %v\n", analysis.HasAgentsDir)
+		responseText += fmt.Sprintf("**Has Manifest:** %v\n", analysis.HasManifest)
+		responseText += fmt.Sprintf("**Agent Count:** %d\n\n", analysis.AgentCount)
+
+		if len(analysis.Agents) > 0 {
+			responseText += "## Deployed Agents\n\n"
+			for _, ag := range analysis.Agents {
+				responseText += fmt.Sprintf("**%s**", ag.Name)
+				if ag.Version != "" {
+					responseText += fmt.Sprintf(" (v%s)", ag.Version)
+				} else {
+					responseText += " (no version)"
+				}
+				if ag.MatchesSource != "" {
+					responseText += fmt.Sprintf(" - matches %s", ag.MatchesSource)
+					if ag.NeedsUpgrade {
+						responseText += " (update available)"
+					}
+				} else {
+					responseText += " - not in sources"
+				}
+				responseText += "\n"
+			}
+			responseText += "\n"
+		}
+
+		// Show recommendations
+		responseText += "## Recommendations\n\n"
+		if analysis.Recommendations.MinimalRequired {
+			responseText += "✓ **Minimal normalization required:** Create manifests for tracking\n"
+		}
+		if analysis.Recommendations.StandardRecommended {
+			responseText += "✓ **Standard normalization recommended:** Link agents to sources\n"
+		}
+		if analysis.Recommendations.FullOptional {
+			responseText += "✓ **Full normalization optional:** Rewrite agents with agent-architect\n"
+		}
+
+		if !analysis.Recommendations.MinimalRequired && !analysis.Recommendations.StandardRecommended {
+			responseText += "✓ **Project is fully normalized!**\n"
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, analysis, nil
+	})
+
+	// Register normalize_project tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "normalize_project",
+		Description: "Normalize a project by creating manifests and linking agents to sources. " +
+			"Supports minimal (just manifests) and standard (manifests + source links) levels. " +
+			"Creates backup before making changes.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		ProjectPath string `json:"project_path"`
+		Level       string `json:"level"` // "minimal" or "standard"
+	}) (*mcp.CallToolResult, any, error) {
+		// Load config to get available sources
+		cfg, err := config.Load()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Parse level
+		var level normalize.ProjectNormalizationLevel
+		switch args.Level {
+		case "minimal":
+			level = normalize.LevelMinimal
+		case "standard":
+			level = normalize.LevelStandard
+		case "full":
+			level = normalize.LevelFull
+		default:
+			return nil, nil, fmt.Errorf("invalid level: %s (must be 'minimal', 'standard', or 'full')", args.Level)
+		}
+
+		// Normalize project
+		options := normalize.ProjectNormalizationOptions{
+			Level: level,
+		}
+
+		result, err := normalize.NormalizeProject(args.ProjectPath, options, cfg.AgentSources)
+		if err != nil {
+			return nil, nil, fmt.Errorf("normalization failed: %w", err)
+		}
+
+		// Format response
+		responseText := fmt.Sprintf("# Project Normalization\n\n")
+		responseText += fmt.Sprintf("**Status:** %s\n", func() string {
+			if result.Success {
+				return "✓ Success"
+			}
+			return "✗ Failed"
+		}())
+		responseText += fmt.Sprintf("**State Before:** %s\n", result.StateBefore)
+		responseText += fmt.Sprintf("**State After:** %s\n", result.StateAfter)
+		responseText += fmt.Sprintf("**Backup Created:** %s\n\n", result.BackupPath)
+
+		if len(result.Changes) > 0 {
+			responseText += "## Changes Made\n\n"
+			for _, change := range result.Changes {
+				responseText += fmt.Sprintf("- %s\n", change)
+			}
+			responseText += "\n"
+		}
+
+		if result.UndoAvailable {
+			responseText += "**Undo available:** Use backup.RestoreFromBackup to revert changes\n"
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, result, nil
+	})
+
+	// Register cleanup_backups tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "cleanup_backups",
+		Description: "Clean up old backup directories, keeping only the N most recent. " +
+			"Use when backup count exceeds threshold (10+) or to free up disk space. " +
+			"Default keeps 3 most recent backups.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		TargetPath string `json:"target_path"`
+		KeepRecent int    `json:"keep_recent"` // Default: 3
+	}) (*mcp.CallToolResult, any, error) {
+		// Default to keeping 3 recent backups
+		keepRecent := args.KeepRecent
+		if keepRecent <= 0 {
+			keepRecent = backup.DefaultKeepRecent
+		}
+
+		// Analyze archive first
+		analysis, err := backup.AnalyzeArchive(args.TargetPath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to analyze archive: %w", err)
+		}
+
+		// Format response
+		responseText := fmt.Sprintf("# Backup Cleanup\n\n")
+		responseText += fmt.Sprintf("**Total Backups:** %d\n", analysis.TotalBackups)
+		responseText += fmt.Sprintf("**Total Size:** %.2f MB\n\n", float64(analysis.TotalSizeBytes)/(1024*1024))
+
+		if analysis.TotalBackups <= keepRecent {
+			responseText += fmt.Sprintf("No cleanup needed - only %d backups exist (keeping %d)\n", analysis.TotalBackups, keepRecent)
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, analysis, nil
+		}
+
+		// Perform cleanup
+		result, err := backup.CleanupBackups(args.TargetPath, backup.CleanupOptions{
+			KeepRecent: keepRecent,
+		})
+		if err != nil {
+			return nil, nil, fmt.Errorf("cleanup failed: %w", err)
+		}
+
+		responseText += fmt.Sprintf("## Cleanup Results\n\n")
+		responseText += fmt.Sprintf("**Removed:** %d backups\n", result.RemovedCount)
+		responseText += fmt.Sprintf("**Freed:** %.2f MB\n", float64(result.FreedBytes)/(1024*1024))
+		responseText += fmt.Sprintf("**Kept:** %d backups\n\n", len(result.KeptBackups))
+
+		if len(result.KeptBackups) > 0 {
+			responseText += "**Remaining backups:**\n"
+			for _, backupPath := range result.KeptBackups {
+				responseText += fmt.Sprintf("- %s\n", filepath.Base(backupPath))
+			}
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, result, nil
 	})
 }
 
