@@ -13,7 +13,7 @@ func TestGetConfigPath(t *testing.T) {
 	path, err := GetConfigPath()
 
 	require.NoError(t, err)
-	assert.Contains(t, path, ".cami")
+	assert.Contains(t, path, "cami-workspace")
 	assert.Contains(t, path, "config.yaml")
 }
 
@@ -50,7 +50,7 @@ func TestLoadAndSave(t *testing.T) {
 		}
 
 		// Create config directory
-		require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, ".cami"), 0755))
+		require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "cami-workspace"), 0755))
 
 		// Save
 		err := cfg.Save()
@@ -78,7 +78,7 @@ func TestLoadAndSave(t *testing.T) {
 
 	t.Run("load non-existent config creates default", func(t *testing.T) {
 		// Remove config file
-		os.Remove(filepath.Join(tmpDir, ".cami", "config.yaml"))
+		os.Remove(filepath.Join(tmpDir, "cami-workspace", "config.yaml"))
 
 		cfg, err := Load()
 
