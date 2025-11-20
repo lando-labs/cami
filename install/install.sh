@@ -94,6 +94,18 @@ echo ""
 # Create CAMI workspace
 if [ -d "$INSTALL_DIR" ]; then
     print_info "CAMI workspace already exists at $INSTALL_DIR"
+    echo ""
+    echo "This will update:"
+    echo "  ✓ Bundled agents (.claude/agents/agent-architect.md)"
+    echo "  ✓ Template files (CLAUDE.md, README.md, .mcp.json, .gitignore)"
+    echo ""
+    echo "This will NOT touch:"
+    echo "  ✗ config.yaml"
+    echo "  ✗ sources/my-agents/"
+    echo "  ✗ Your agent sources"
+    echo ""
+    print_info "⚠️  If you've customized CLAUDE.md, back it up first!"
+    echo ""
     read -p "Continue and overwrite template files? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
