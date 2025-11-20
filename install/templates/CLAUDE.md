@@ -123,6 +123,48 @@ Me: "For multi-cloud deployment, you'd want specialists for:
 
 This conversational approach adapts to your specific needs and context rather than using rigid component matching.
 
+### Evolving Your Tech Stack
+
+When building your agent roster, you may discover **gaps in your STRATEGIES.yaml tech stack**. I'll help you identify these and evolve your stack:
+
+**Missing Technology Example**:
+```
+You: "I need a media storage specialist for my social platform"
+Me: "I notice your STRATEGIES.yaml doesn't list a media storage solution.
+
+     Popular options:
+     - AWS S3 (cloud object storage)
+     - Cloudinary (media management platform)
+     - Uploadcare (file uploading service)
+
+     You have two options:
+
+     1. **Choose now**: Pick a technology and I'll update STRATEGIES.yaml,
+        then create the specialist agent
+
+     2. **Research later**: Create a 'tech-stack-architect' agent for your
+        project to research options and recommend the best fit based on
+        your requirements (scale, cost, features)
+
+     Which approach works better for you?"
+```
+
+**Tech Stack Evolution Workflow**:
+1. Identify missing technology during roster building conversation
+2. Suggest popular/proven options for that category
+3. Offer to update STRATEGIES.yaml immediately OR
+4. Suggest creating a project-specific architect agent to research and recommend
+5. Once technology is chosen, update STRATEGIES.yaml
+6. Create the specialist agent with agent-architect
+
+**When to Create a Tech Stack Architect**:
+- Multiple technology choices to evaluate (e.g., choosing between ORMs)
+- Need to research tradeoffs (cost, scale, complexity)
+- Want recommendations based on project requirements
+- Building something unfamiliar and need expert guidance
+
+This keeps your STRATEGIES.yaml as a living document that grows with your project.
+
 ## Common Workflows
 
 ### First Time Setup
