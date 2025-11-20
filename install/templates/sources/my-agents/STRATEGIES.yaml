@@ -8,10 +8,13 @@
 # Full documentation: https://github.com/lando-labs/cami/blob/main/docs/STRATEGIES.md
 
 # ==============================================================================
-# REQUIRED: Tech Stack
+# Tech Stack
 # ==============================================================================
 # Agents discover the ACTUAL stack from your codebase (package.json, etc.)
-# Use this preference as a tiebreaker when multiple valid approaches exist.
+# Use this as a tiebreaker when multiple valid approaches exist.
+#
+# This file is OPTIONAL - if it doesn't exist or is empty, agent-architect will
+# use its comprehensive fallback tech stack specifications.
 
 tech_stack:
   # List the specific technologies your agents should specialize in.
@@ -62,124 +65,20 @@ tech_stack:
     - Together they ensure agents are both relevant AND expert
 
 # ==============================================================================
-# OPTIONAL: Available Strategy Sections
+# Additional Strategy Options
 # ==============================================================================
-# Uncomment and customize any sections below.
-# See full documentation: https://github.com/lando-labs/cami/blob/main/docs/STRATEGIES.md
-
-# ------------------------------------------------------------------------------
-# Tool Discovery & Usage - How agents find and use MCP tools, CLI commands
-# ------------------------------------------------------------------------------
-# tool_discovery:
-#   approach: "mcp-first"  # or "cli-first", "hybrid"
-#   strategy: |
-#     Discovery order: MCP tools first, then CLI, then ask user.
-#     Always ask permission before using external tools.
-
-# ------------------------------------------------------------------------------
-# Communication & Notifications - How agents notify about events
-# ------------------------------------------------------------------------------
-# communication:
-#   preference: "none"  # or "slack", "email", "github", "discord"
-#   strategy: |
-#     When to notify (critical errors, completions), how to discover tools,
-#     permission protocol.
-
-# ------------------------------------------------------------------------------
-# Documentation Strategy - Where and how to create docs
-# ------------------------------------------------------------------------------
-# documentation:
-#   approach: "inline-only"  # or "internal-reference", "external-docs", "both"
-#   strategy: |
-#     inline-only: JSDoc, docstrings with code
-#     internal-reference: Also use /reference for ADRs, architecture
-#     external-docs: Separate docs site
-#     both: All of the above
-
-# ------------------------------------------------------------------------------
-# Error Handling Philosophy - How to structure error handling
-# ------------------------------------------------------------------------------
-# error_handling:
-#   approach: "user-friendly"  # or "standard", "centralized", "logging-service"
-#   strategy: |
-#     Never expose internal errors to users. Log with context.
-#     Check for error monitoring tools (Sentry MCP, etc.)
-
-# ------------------------------------------------------------------------------
-# Testing Philosophy - Testing approach and coverage
-# ------------------------------------------------------------------------------
-# testing:
-#   approach: "practical-coverage"  # or "strict-tdd", "high-coverage", "integration-first"
-#   coverage_target: 80
-#   strategy: |
-#     Test what matters. Focus on critical paths, edge cases, integrations.
-#     Don't test framework code or trivial getters.
-
-# ------------------------------------------------------------------------------
-# Deployment Approach - How deployments should be handled
-# ------------------------------------------------------------------------------
-# deployment:
-#   type: "docker-compose"  # or "kubernetes", "serverless", "bare-metal"
-#   strategy: |
-#     Deployment checklist: tests, build, tag, deploy, health checks.
-#     Check for deployment tools (docker, kubectl, gh CLI).
-
-# ------------------------------------------------------------------------------
-# API Design Principles - REST, GraphQL, tRPC patterns
-# ------------------------------------------------------------------------------
-# api_design:
-#   style: "rest"  # or "graphql", "trpc", "grpc"
-#   versioning: "url-based"  # or "header-based", "none"
-#   strategy: |
-#     REST: standard HTTP methods, status codes, /v1/ versioning.
-#     Include pagination, error formats, CORS config.
-
-# ------------------------------------------------------------------------------
-# Authentication Approach - How auth should be implemented
-# ------------------------------------------------------------------------------
-# authentication:
-#   type: "jwt"  # or "session", "oauth", "api-key", "none"
-#   strategy: |
-#     JWT: short-lived tokens (15min), refresh tokens (7d).
-#     Session: server-side storage, httpOnly cookies.
-#     Never hardcode secrets, use env vars.
-
-# ------------------------------------------------------------------------------
-# Database Patterns - ORM, query builder, or raw SQL
-# ------------------------------------------------------------------------------
-# database:
-#   pattern: "orm-preferred"  # or "raw-sql", "query-builder", "orm-with-raw"
-#   migrations: "managed"  # or "manual"
-#   strategy: |
-#     ORM for CRUD, raw SQL for complex queries.
-#     All schema changes via migrations.
-
-# ------------------------------------------------------------------------------
-# Agent Collaboration - How multiple agents work together
-# ------------------------------------------------------------------------------
-# agent_collaboration:
-#   approach: "handoff"  # or "parallel", "orchestrated"
-#   strategy: |
-#     handoff: Sequential workflow (frontend → backend → qa)
-#     parallel: Simultaneous work with API contracts
-#     orchestrated: Coordinator assigns tasks
-
-# ==============================================================================
-# CUSTOM SECTIONS
-# ==============================================================================
-# Add your own sections below. Agents will interpret descriptive names.
+# This file supports many optional strategy sections:
+#   - tool_discovery: How agents find and use MCP tools, CLI commands
+#   - communication: How agents notify about events
+#   - documentation: Where and how to create docs
+#   - error_handling: How to structure error handling
+#   - testing: Testing approach and coverage
+#   - deployment: How deployments should be handled
+#   - api_design: REST, GraphQL, tRPC patterns
+#   - authentication: How auth should be implemented
+#   - database: ORM, query builder, or raw SQL
+#   - agent_collaboration: How multiple agents work together
+#   - custom sections: Add your own with descriptive names
 #
-# Example:
-# code_review:
-#   required_approvals: 2
-#   auto_merge: false
-#   strategy: |
-#     Two approvals required for main branch.
-#     Run full CI before merge. No force pushes.
-#
-# security_scanning:
-#   tools: ["snyk", "dependabot"]
-#   block_on_critical: true
-#   strategy: |
-#     Run security scans on every PR. Block merge if critical vulns.
-#     Check for Snyk MCP or CLI tools.
+# See full documentation with examples:
+# https://github.com/lando-labs/cami/blob/main/docs/STRATEGIES.md
