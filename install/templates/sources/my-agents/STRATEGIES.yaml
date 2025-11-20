@@ -16,7 +16,30 @@ version: "1.0.0"
 # Use this preference as a tiebreaker when multiple valid approaches exist.
 
 tech_stack:
-  preference: "modern-web"  # or "enterprise-java", "data-science", "mobile-native", etc.
+  # List the specific technologies your agents should specialize in.
+  # Be concrete - list actual frameworks, languages, and tools with versions.
+  # This guides CAMI and agent-architect when helping you build your agent roster.
+
+  technologies:
+    # Frontend
+    - React 19+
+    - Next.js 15+
+    - TypeScript 5+
+    - Tailwind CSS 4+
+
+    # Backend
+    - Node.js 20+
+    - TypeScript 5+
+    - PostgreSQL 15+
+    - Drizzle ORM
+
+    # Testing
+    - Vitest
+    - Playwright
+
+    # Infrastructure
+    - Docker 24+
+    - GitHub Actions
 
   strategy: |
     **Discovery Protocol**:
@@ -26,7 +49,7 @@ tech_stack:
     - CLAUDE.md technology sections
     - Build configurations
 
-    **Use this preference as TIEBREAKER for**:
+    **Use this tech stack as TIEBREAKER for**:
     - Modern vs legacy patterns (e.g., React Server Components vs client-side)
     - Multiple valid approaches (e.g., Server Actions vs API routes)
     - Library choices when creating new features
@@ -36,18 +59,9 @@ tech_stack:
     explicitly requests upgrade guidance. Never break working code for "newness".
 
     **Relationship with agent-architect's Tech Stack Guidance**:
-    - This preference guides WHICH technologies to emphasize (project-level)
+    - This tech stack guides WHICH technologies to emphasize (your guild's focus)
     - agent-architect's tech stack specs ensure DEPTH of expertise (meta-level)
-    - Example: This says "modern-web" → agent-architect ensures frontend agents
-      include React 19+ Server Components, Next.js 15+ App Router, etc.
     - Together they ensure agents are both relevant AND expert
-
-    **Example Modern Web Stack**:
-    - Frontend: React 19+, Next.js 15+, TypeScript
-    - Backend: Node.js, TypeScript, modern frameworks
-    - Database: PostgreSQL, Drizzle ORM
-    - Testing: Vitest, Playwright
-    - Infrastructure: Docker, GitHub Actions
 
 # ==============================================================================
 # OPTIONAL: Available Strategy Sections
