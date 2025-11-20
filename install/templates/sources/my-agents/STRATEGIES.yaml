@@ -1,4 +1,4 @@
-# CAMI Agent Strategies v1.0.0
+# CAMI Agent Strategies
 #
 # This file defines the tech stack and behavioral strategies for agents in this source.
 # agent-architect reads these strategies when creating new agents for this guild.
@@ -7,10 +7,8 @@
 #
 # Full documentation: https://github.com/lando-labs/cami/blob/main/docs/STRATEGIES.md
 
-version: "1.0.0"
-
 # ==============================================================================
-# REQUIRED: Tech Stack Preference
+# REQUIRED: Tech Stack
 # ==============================================================================
 # Agents discover the ACTUAL stack from your codebase (package.json, etc.)
 # Use this preference as a tiebreaker when multiple valid approaches exist.

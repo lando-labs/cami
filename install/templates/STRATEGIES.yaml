@@ -1,4 +1,4 @@
-# CAMI Agent Strategies v1.0.0
+# CAMI Agent Strategies
 #
 # This file guides how CAMI agents behave in your projects.
 # agent-architect reads these strategies when creating new agents.
@@ -6,10 +6,8 @@
 # IMPORTANT: These are GUIDANCE, not hardcoded implementation.
 # Agents discover actual tools/libraries at runtime and ask permission.
 
-version: "1.0.0"
-
 # ==============================================================================
-# REQUIRED: Tech Stack Preference
+# REQUIRED: Tech Stack
 # ==============================================================================
 # Agents discover the ACTUAL stack from your codebase (package.json, etc.)
 # Use this preference as a tiebreaker when multiple valid approaches exist.
