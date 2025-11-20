@@ -123,55 +123,51 @@ Me: "For multi-cloud deployment, you'd want specialists for:
 
 This conversational approach adapts to your specific needs and context rather than using rigid component matching.
 
-### Evolving Your Tech Stack
+### When Your Roster Needs an Architect
 
-When building your agent roster, you may discover **gaps in your STRATEGIES.yaml tech stack**. I'll help you identify these and evolve your stack:
+Not every agent roster needs an architect - it depends on what you're building:
 
-**Missing Technology Example**:
+**Application/Product Development** (e-commerce, SaaS, social platform):
 ```
-You: "I need a media storage specialist for my social platform"
-Me: "I notice your STRATEGIES.yaml doesn't list a media storage solution.
+You: "I'm building an e-commerce platform"
+Me: "For an e-commerce application, you'll want a team that includes:
+     - architect (coordinates integration, API contracts, data flow)
+     - frontend specialist (React 19+, Next.js 15+ storefront)
+     - backend specialist (Node.js 20+ APIs)
+     - database specialist (PostgreSQL 15+ for products, orders, users)
+     - payment specialist (Stripe/payment processing)
+     - security specialist (PCI compliance, auth)
+     - qa specialist (testing critical payment flows)
 
-     Popular options:
-     - AWS S3 (cloud object storage)
-     - Cloudinary (media management platform)
-     - Uploadcare (file uploading service)
-
-     You have two options:
-
-     1. **Choose now**: Pick a technology and I'll update STRATEGIES.yaml,
-        then create the specialist agent
-
-     2. **Research later**: Create a 'project-architect' agent for your
-        project to research options and provide holistic guidance on
-        technology choices, architecture decisions, and tradeoffs
-
-     Which approach works better for you?"
+     The architect agent will coordinate between specialists to ensure
+     everything integrates properly. Should we create these agents?"
 ```
 
-**Tech Stack Evolution Workflow**:
-1. Identify missing technology during roster building conversation
-2. Suggest popular/proven options for that category
-3. Offer to update STRATEGIES.yaml immediately OR
-4. Suggest creating a project-specific architect agent for holistic guidance
-5. Once technology is chosen, update STRATEGIES.yaml
-6. Create the specialist agent with agent-architect
+**Guild of Specialists** (deployment tools, cloud providers, utilities):
+```
+You: "I'm collecting deployment agents for multi-cloud"
+Me: "For a multi-cloud deployment guild, you'll want:
+     - aws-deploy (ECS, Lambda, CloudFormation)
+     - gcp-deploy (Cloud Run, GKE, Terraform)
+     - azure-deploy (AKS, App Service, Bicep)
 
-**When to Create a Project Architect**:
-- Multiple technology choices to evaluate (e.g., choosing between ORMs)
-- Need holistic guidance on architecture decisions
-- Want recommendations based on project requirements (scale, cost, complexity, team)
-- Need to evaluate tradeoffs across multiple areas (tech stack, architecture, infrastructure)
-- Building something unfamiliar and need expert guidance
+     These are independent tools - no architect needed since they don't
+     need to coordinate with each other. Should we create these?"
+```
 
-**What a Project Architect Does**:
-- Research technology options and recommend best fits
-- Evaluate architecture patterns for your use case
-- Consider project constraints (budget, timeline, team expertise)
-- Provide holistic guidance that considers the full project context
-- Help evolve STRATEGIES.yaml as project requirements become clearer
+**When to Include an Architect**:
+- ✅ Building applications/products where pieces need to integrate
+- ✅ Multiple specialists that need coordination (frontend ↔ backend ↔ database)
+- ✅ Complex data flows or integration points
+- ✅ Need someone to define API contracts and architecture patterns
+- ❌ NOT for guilds of independent specialist tools
 
-This keeps your STRATEGIES.yaml as a living document that grows with your project.
+**What an Architect Agent Does** (when needed):
+- Coordinates integration between specialists
+- Defines API contracts and data schemas
+- Makes architecture decisions (monolith vs microservices, caching strategies)
+- Ensures specialists work together cohesively
+- Reviews cross-cutting concerns (security, performance, scalability)
 
 ## Common Workflows
 
