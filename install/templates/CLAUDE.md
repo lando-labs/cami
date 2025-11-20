@@ -142,9 +142,9 @@ Me: "I notice your STRATEGIES.yaml doesn't list a media storage solution.
      1. **Choose now**: Pick a technology and I'll update STRATEGIES.yaml,
         then create the specialist agent
 
-     2. **Research later**: Create a 'tech-stack-architect' agent for your
-        project to research options and recommend the best fit based on
-        your requirements (scale, cost, features)
+     2. **Research later**: Create a 'project-architect' agent for your
+        project to research options and provide holistic guidance on
+        technology choices, architecture decisions, and tradeoffs
 
      Which approach works better for you?"
 ```
@@ -153,15 +153,23 @@ Me: "I notice your STRATEGIES.yaml doesn't list a media storage solution.
 1. Identify missing technology during roster building conversation
 2. Suggest popular/proven options for that category
 3. Offer to update STRATEGIES.yaml immediately OR
-4. Suggest creating a project-specific architect agent to research and recommend
+4. Suggest creating a project-specific architect agent for holistic guidance
 5. Once technology is chosen, update STRATEGIES.yaml
 6. Create the specialist agent with agent-architect
 
-**When to Create a Tech Stack Architect**:
+**When to Create a Project Architect**:
 - Multiple technology choices to evaluate (e.g., choosing between ORMs)
-- Need to research tradeoffs (cost, scale, complexity)
-- Want recommendations based on project requirements
+- Need holistic guidance on architecture decisions
+- Want recommendations based on project requirements (scale, cost, complexity, team)
+- Need to evaluate tradeoffs across multiple areas (tech stack, architecture, infrastructure)
 - Building something unfamiliar and need expert guidance
+
+**What a Project Architect Does**:
+- Research technology options and recommend best fits
+- Evaluate architecture patterns for your use case
+- Consider project constraints (budget, timeline, team expertise)
+- Provide holistic guidance that considers the full project context
+- Help evolve STRATEGIES.yaml as project requirements become clearer
 
 This keeps your STRATEGIES.yaml as a living document that grows with your project.
 
