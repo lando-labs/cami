@@ -76,12 +76,12 @@ else
 fi
 
 echo ""
-print_info "Default workspace directory: $INSTALL_DIR"
-print_info "Binary directory: $BIN_DIR"
+print_info "Workspace directory: $INSTALL_DIR"
+print_info "Binary directory: $BIN_DIR (requires sudo)"
 echo ""
 
 # Ask user for custom workspace location
-read -p "Press Enter to use default, or specify custom path: " CUSTOM_DIR
+read -p "Customize workspace directory? (press Enter for default): " CUSTOM_DIR
 if [ -n "$CUSTOM_DIR" ]; then
     # Expand ~ if present
     CUSTOM_DIR="${CUSTOM_DIR/#\~/$HOME}"
