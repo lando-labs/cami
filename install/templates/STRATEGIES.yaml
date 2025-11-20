@@ -1,0 +1,404 @@
+# CAMI Agent Strategies v1.0.0
+#
+# This file guides how CAMI agents behave in your projects.
+# agent-architect reads these strategies when creating new agents.
+#
+# IMPORTANT: These are GUIDANCE, not hardcoded implementation.
+# Agents discover actual tools/libraries at runtime and ask permission.
+
+version: "1.0.0"
+
+# ==============================================================================
+# REQUIRED: Tech Stack Preference
+# ==============================================================================
+# Agents discover the ACTUAL stack from your codebase (package.json, etc.)
+# Use this preference as a tiebreaker when multiple valid approaches exist.
+
+tech_stack:
+  preference: "modern-web"  # or "enterprise-java", "data-science", "mobile-native", etc.
+
+  strategy: |
+    **Discovery Protocol**:
+    Agents should DISCOVER actual tech stack by examining:
+    - package.json, requirements.txt, go.mod, Cargo.toml, etc.
+    - Existing code patterns and imports
+    - CLAUDE.md technology sections
+    - Build configurations
+
+    **Use this preference as TIEBREAKER for**:
+    - Modern vs legacy patterns (e.g., React Server Components vs client-side)
+    - Multiple valid approaches (e.g., Server Actions vs API routes)
+    - Library choices when creating new features
+
+    **Respect Project Autonomy**:
+    If project uses older versions, RESPECT existing choices unless user
+    explicitly requests upgrade guidance. Never break working code for "newness".
+
+    **Example Modern Web Stack**:
+    - Frontend: React 19+, Next.js 15+, TypeScript
+    - Backend: Node.js, TypeScript, modern frameworks
+    - Database: PostgreSQL, Drizzle ORM
+    - Testing: Vitest, Playwright
+    - Infrastructure: Docker, GitHub Actions
+
+# ==============================================================================
+# OPTIONAL: Tool Discovery & Usage Patterns
+# ==============================================================================
+# How agents should discover and use MCP tools, CLI commands, etc.
+
+tool_discovery:
+  approach: "mcp-first"  # or "cli-first", "hybrid"
+
+  strategy: |
+    **Discovery Order** (mcp-first):
+    1. Check for relevant MCP tools via Claude Code
+    2. Fall back to CLI commands via Bash tool
+    3. Ask user for guidance if neither available
+
+    **Permission Protocol**:
+    - Always ask user permission before using external tools
+    - Explain what the tool will do and why
+    - Show command/tool call before executing
+    - Respect user's choice to decline
+
+    **Examples**:
+    - Git operations: Look for mcp__git-all__* tools, fall back to git CLI
+    - Firebase: Look for mcp__firebase__* tools, fall back to firebase CLI
+    - Slack: Look for mcp__slack__* tools, then slack-cli command
+
+    **Never**:
+    - Hardcode API keys, tokens, or credentials
+    - Assume tools are always available
+    - Use tools without user understanding/permission
+    - Store sensitive data in agent files
+
+# ==============================================================================
+# OPTIONAL: Communication & Notifications
+# ==============================================================================
+# How agents should notify users about events, completions, errors
+
+communication:
+  preference: "none"  # or "slack", "email", "github", "discord"
+
+  strategy: |
+    **Notification Philosophy**:
+    Keep users informed of long-running operations, critical errors, and
+    important completions. Never spam with routine updates.
+
+    **When to Notify**:
+    - Critical: Test failures, security vulnerabilities, deployment failures
+    - Important: Completed deployments, major refactors, breaking changes
+    - Optional: Task completion, progress updates (ask user first)
+
+    **Discovery & Permission**:
+    If preference is "slack":
+      1. Check for mcp__slack__* tools
+      2. Check for slack CLI commands
+      3. Ask user: "Send notification to Slack?"
+      4. If declined: Report to console or orchestrator
+
+    If preference is "none":
+      - Report all updates to user via conversation
+      - Suggest notification tools if long-running operations detected
+
+    **Format**:
+    - Include context: what happened, why it matters, next steps
+    - Use threading for related updates
+    - Include links to relevant resources (PRs, logs, docs)
+
+# ==============================================================================
+# OPTIONAL: Documentation Strategy
+# ==============================================================================
+# Where and how agents should create/update documentation
+
+documentation:
+  approach: "inline-only"  # or "internal-reference", "external-docs", "both"
+
+  strategy: |
+    **inline-only**: Documentation lives with code (JSDoc, docstrings, comments)
+
+    **internal-reference**: Maintain /reference directory for:
+      - Architecture Decision Records (ADRs)
+      - API contracts between services
+      - Complex business logic explanations
+      - Security considerations and threat models
+
+    **external-docs**: Separate docs site (GitBook, Docusaurus, etc.)
+
+    **both**: Inline for code-level, /reference for architecture, external for users
+
+    **When to Create /reference Docs**:
+    - Architecture decisions that affect multiple files
+    - Cross-cutting concerns (auth, error handling, state management)
+    - Complex algorithms or business logic
+    - Integration patterns with external services
+
+    **When to Use Inline Docs**:
+    - Function/method documentation
+    - Complex regex or algorithms
+    - Edge case handling
+    - Non-obvious code behavior
+
+    **Don't Document**:
+    - Obvious code (getters/setters)
+    - Framework patterns (link to framework docs instead)
+    - Auto-generated code
+
+# ==============================================================================
+# OPTIONAL: Error Handling Philosophy
+# ==============================================================================
+# How agents should structure error handling in code they write
+
+error_handling:
+  approach: "user-friendly"  # or "standard", "centralized", "logging-service"
+
+  strategy: |
+    **Core Principles**:
+    - Never expose internal errors to users
+    - Always log with context (user ID, request ID, timestamp)
+    - Categorize: validation, business logic, system, external service
+    - Include recovery suggestions
+
+    **standard**: Try/catch blocks, console.error, return error codes
+
+    **user-friendly**: Centralized handler, friendly messages, detailed logs
+      1. Catch error in centralized handler
+      2. Log to available service (check for Sentry MCP, logging tools)
+      3. Return user-friendly message
+      4. Include trace ID for debugging
+
+    **centralized**: Single error handling service
+      - Create ErrorHandler class/module
+      - All errors flow through central handler
+      - Consistent error shapes across codebase
+
+    **logging-service**: External error monitoring
+      - Check for error monitoring MCP tools (Sentry, Rollbar, etc.)
+      - Ask user permission before sending errors externally
+      - Include context: stack trace, user info, environment
+
+    **For APIs**: Return consistent error shapes
+    ```json
+    {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "User-friendly message",
+        "details": { "field": "email", "issue": "invalid format" },
+        "trace_id": "abc-123-def"
+      }
+    }
+    ```
+
+# ==============================================================================
+# OPTIONAL: Testing Philosophy
+# ==============================================================================
+# Testing approach and coverage expectations
+
+testing:
+  approach: "practical-coverage"  # or "strict-tdd", "high-coverage", "integration-first", "e2e-first"
+  coverage_target: 80
+
+  strategy: |
+    **practical-coverage**: Test what matters, aim for confidence not 100%
+
+    **Testing Priorities**:
+    1. Critical business logic (payment, auth, data integrity)
+    2. Edge cases in complex algorithms
+    3. Integration points between services
+    4. User-facing workflows (E2E for happy paths)
+
+    **Don't Test**:
+    - Framework code or library internals
+    - Trivial getters/setters
+    - Auto-generated code
+    - Third-party integrations (mock them)
+
+    **Test Structure**:
+    - Descriptive names that explain the scenario
+    - Arrange-Act-Assert pattern
+    - One assertion per test (when possible)
+    - Mock external services, test integration separately
+
+    **Coverage Target**: {coverage_target}%
+    - Focus on critical paths
+    - Don't sacrifice quality for coverage percentage
+    - Review uncovered code - is it testable? Should it be?
+
+# ==============================================================================
+# OPTIONAL: Deployment Approach
+# ==============================================================================
+# How deployments should be handled
+
+deployment:
+  type: "docker-compose"  # or "kubernetes", "serverless", "bare-metal", "manual"
+
+  strategy: |
+    **Deployment Checklist** (ask user before each step):
+    1. Run full test suite
+    2. Build artifacts (Docker image, compiled binary, etc.)
+    3. Tag with version (semantic versioning)
+    4. Push to registry (if applicable)
+    5. Deploy to target environment
+    6. Run health checks
+    7. Notify on completion (via communication strategy)
+
+    **Tool Discovery**:
+    - Check for deployment tools (docker, kubectl, gh CLI, etc.)
+    - Check for CI/CD MCP tools
+    - Ask user for credentials/permissions as needed
+
+    **Rollback Plan**:
+    - Keep previous 3 versions tagged for quick rollback
+    - Document rollback procedure
+    - Test rollback in staging before production issue
+
+    **Environment Strategy**:
+    - development: Local docker-compose, hot reload
+    - staging: Cloud deployment, production-like
+    - production: Blue-green or rolling deployments
+
+# ==============================================================================
+# OPTIONAL: API Design Principles
+# ==============================================================================
+# RESTful, GraphQL, tRPC, or other API patterns
+
+api_design:
+  style: "rest"  # or "graphql", "trpc", "grpc"
+  versioning: "url-based"  # or "header-based", "none"
+
+  strategy: |
+    **REST Principles** (if style: rest):
+    - Use standard HTTP methods (GET, POST, PUT, PATCH, DELETE)
+    - Return appropriate status codes (200, 201, 400, 401, 404, 500)
+    - URL versioning: /v1/users, /v2/users
+    - Plural nouns for collections: /users
+    - Singular for resources: /users/:id
+    - Actions as sub-resources: /users/:id/verify
+
+    **Pagination**:
+    - Cursor-based for large datasets
+    - Include total count and next/prev links
+    - Default page size: 20, max: 100
+
+    **Error Responses**:
+    - Consistent error format (see error_handling strategy)
+    - Include helpful error messages
+    - Don't expose internal implementation details
+
+    **CORS & Security**:
+    - Configure CORS for browser clients
+    - Rate limiting for public endpoints
+    - API key or JWT authentication
+    - Validate all inputs
+
+# ==============================================================================
+# OPTIONAL: Authentication Approach
+# ==============================================================================
+# How authentication should be implemented
+
+authentication:
+  type: "jwt"  # or "session", "oauth", "api-key", "none"
+
+  strategy: |
+    **JWT Strategy** (if type: jwt):
+    - Access token: 15 minutes expiry
+    - Refresh token: 7 days expiry
+    - Store refresh in httpOnly cookies
+    - Include user roles/permissions in claims
+    - Validate signature on every request
+    - Implement token rotation on refresh
+
+    **Security Considerations**:
+    - Never log tokens or credentials
+    - Use strong secrets (check for env vars, never hardcode)
+    - Implement rate limiting on auth endpoints
+    - Hash refresh tokens in database
+    - Use bcrypt/argon2 for password hashing
+
+    **Session Strategy** (if type: session):
+    - Server-side session storage
+    - Secure session cookies (httpOnly, sameSite)
+    - Session timeout after inactivity
+    - Regenerate session ID after login
+
+    **Discovery**:
+    - Check for auth MCP tools (Auth0, Firebase Auth, etc.)
+    - Check for crypto libraries
+    - Ask user for auth service preferences
+
+# ==============================================================================
+# OPTIONAL: Database Patterns
+# ==============================================================================
+# ORM, query builder, or raw SQL approach
+
+database:
+  pattern: "orm-preferred"  # or "raw-sql", "query-builder", "orm-with-raw"
+  migrations: "managed"  # or "manual"
+
+  strategy: |
+    **When to Use ORM** (if pattern: orm-preferred or orm-with-raw):
+    - Standard CRUD operations
+    - Simple queries with relationships
+    - Type safety and autocomplete
+
+    **When to Use Raw SQL**:
+    - Complex joins (3+ tables)
+    - Performance-critical queries
+    - Database-specific features (CTEs, window functions, full-text search)
+    - Bulk operations
+
+    **Migration Strategy**:
+    - All schema changes via migrations (never manual DDL in production)
+    - Version migrations with timestamps
+    - Test migrations on copy of production data
+    - Include rollback scripts
+    - Review migrations in PR process
+
+    **Discovery**:
+    - Check for ORM tools (Prisma, Drizzle, TypeORM, SQLAlchemy, etc.)
+    - Check for database CLI tools (psql, mysql, etc.)
+    - Detect database from connection strings or config
+
+# ==============================================================================
+# OPTIONAL: Agent Collaboration
+# ==============================================================================
+# How multiple agents should work together on the same project
+
+agent_collaboration:
+  approach: "handoff"  # or "parallel", "orchestrated"
+
+  strategy: |
+    **handoff**: Sequential workflow with clear boundaries
+    - frontend builds UI, hands off to backend for API integration
+    - backend creates API, hands off to qa for testing
+    - qa tests, hands off to deployment for release
+    - Clear handoff points, minimal overlap
+
+    **parallel**: Multiple agents work simultaneously
+    - Requires clear API contracts upfront
+    - Use for greenfield projects with strong architecture
+    - Regular sync points to avoid conflicts
+
+    **orchestrated**: Coordinating agent manages workflow
+    - Orchestrator assigns tasks to specialist agents
+    - Specialists report back to orchestrator
+    - Orchestrator resolves conflicts and makes decisions
+
+    **Communication Between Agents**:
+    - Use CLAUDE.md for shared context
+    - Document decisions and handoff notes
+    - Reference relevant files and line numbers
+    - Tag the next agent in handoff notes
+
+# ==============================================================================
+# CUSTOM SECTIONS
+# ==============================================================================
+# Add your own strategy sections below. agent-architect will read them.
+# Use the same format: type/preference + strategy field with detailed guidance.
+
+# Example:
+# code_review:
+#   required_approvals: 2
+#   strategy: |
+#     Two approvals required for main branch.
+#     Review checklist: tests, docs, no secrets, error handling

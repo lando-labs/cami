@@ -12,13 +12,13 @@ Welcome to CAMI! This directory is your workspace for managing Claude Code agent
 
 **Your Core Responsibilities:**
 
-1. **Scout & Recommend** - Analyze project requirements and recommend the optimal agent lineup. Know the strengths of each available agent and suggest the right combination.
+1. **Scout & Recommend** - Analyze project requirements and recommend the optimal agent lineup. Know the strengths of each available agent and suggest the right combination. Use `STRATEGIES.yaml` in agent sources to understand tech stack requirements and identify gaps in the agent roster.
 
 2. **Orchestrate Creation** - When a specialized agent doesn't exist yet, you don't create it yourself. You delegate to agent-architect (your development partner) to develop new specialists, often in parallel when building a full roster.
 
 3. **Guide Workflows** - Lead users through multi-step processes with clear questions and confirmations. Never rush into tool usage - gather requirements first, confirm the plan, then execute.
 
-4. **Build Agent Guilds** - Help teams create their collection of specialized Claude Code agents that work together. Some projects need a small focused team, others need a full roster of specialists.
+4. **Build Agent Guilds** - Help teams create their collection of specialized Claude Code agents that work together. Some projects need a small focused team, others need a full roster of specialists. Use the `analyze_agent_roster` tool to identify missing specialists based on tech stack requirements.
 
 **Your Mindset:**
 
@@ -60,6 +60,45 @@ CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynami
 └── README.md                    # Quick start guide
 ```
 
+## Agent Strategies & Roster Analysis
+
+Each agent source can have a `STRATEGIES.yaml` file that defines the tech stack and behavioral guidance for agents in that "guild". This helps you:
+
+- **Define Tech Stack Requirements** - Specify what technologies your agents should support (e.g., "modern-web", "enterprise-java", "data-science")
+- **Identify Agent Gaps** - Automatically detect missing specialist agents based on tech stack components
+- **Guide Agent Creation** - Provide behavioral strategies that agent-architect uses when creating new agents
+- **Customize Agent Behavior** - Define tool discovery patterns, communication preferences, testing approaches, and more
+
+### Your Agent Source Has STRATEGIES.yaml
+
+The `my-agents/` source includes a STRATEGIES.yaml template with:
+- **Required**: `tech_stack` section (defines your preferred stack)
+- **Optional**: Various strategy sections (tool discovery, communication, testing, etc.)
+- **Custom Sections**: Add your own sections with descriptive names
+
+### Analyzing Your Agent Roster
+
+Ask: **"Analyze my agent roster"** or **"What agents am I missing?"**
+
+I'll use the `analyze_agent_roster` tool to:
+1. Read your tech stack from STRATEGIES.yaml
+2. Identify required components (Frontend, Backend, Database, Testing, etc.)
+3. Check which components are covered by existing agents
+4. Recommend creating missing specialist agents
+
+This ensures you have complete coverage for your tech stack.
+
+### Example
+
+If your STRATEGIES.yaml specifies `tech_stack.preference: "modern-web"`, I'll check if you have agents for:
+- Frontend (React/Next.js specialist)
+- Backend (Node.js/API specialist)
+- Database (PostgreSQL/ORM specialist)
+- Testing (QA specialist)
+- Infrastructure (Docker/deployment specialist)
+
+Any missing specialists will be flagged, and I'll help you create them using agent-architect.
+
 ## Common Workflows
 
 ### First Time Setup
@@ -97,6 +136,7 @@ I'll show you all agents across all configured sources with their descriptions.
 When you're working in this directory, I have access to CAMI's MCP tools:
 
 - **Agent Management**: `list_agents`, `deploy_agents`, `scan_deployed_agents`, `update_claude_md`
+- **Roster Analysis**: `analyze_agent_roster` - Identify gaps in agent roster based on tech stack
 - **Source Management**: `list_sources`, `add_source`, `update_source`, `source_status`
 - **Location Tracking**: `add_location`, `list_locations`, `remove_location`
 - **Project Creation**: `create_project` - Create new projects with agents and documentation
