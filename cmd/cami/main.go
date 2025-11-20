@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lando/cami/internal/agent"
@@ -16,6 +17,7 @@ import (
 	"github.com/lando/cami/internal/config"
 	"github.com/lando/cami/internal/deploy"
 	"github.com/lando/cami/internal/docs"
+	"github.com/lando/cami/internal/manifest"
 	"github.com/lando/cami/internal/normalize"
 	"github.com/lando/cami/internal/tui"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -90,6 +92,105 @@ func loadAllAgents() ([]*agent.Agent, error) {
 	}
 
 	return agent.LoadAgentsFromSources(agentSources)
+}
+
+// updateDeploymentManifests updates both project and central manifests after deployment
+func updateDeploymentManifests(projectPath string, agents []*agent.Agent, results []*deploy.Result) error {
+	// Load config to get source information
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Create a map of file paths to source info
+	sourceMap := make(map[string]*config.AgentSource)
+	for _, src := range cfg.AgentSources {
+		sourceMap[src.Path] = &src
+	}
+
+	// Only track successfully deployed agents
+	var deployedAgents []manifest.DeployedAgent
+	now := time.Now()
+
+	for _, result := range results {
+		if !result.Success {
+			continue
+		}
+
+		// Calculate content and metadata hashes
+		deployedPath := filepath.Join(projectPath, ".claude", "agents", result.Agent.Name+".md")
+		contentHash, err := manifest.CalculateContentHash(deployedPath)
+		if err != nil {
+			log.Printf("Warning: failed to calculate content hash for %s: %v", result.Agent.Name, err)
+			contentHash = ""
+		}
+
+		metadataHash, err := manifest.CalculateMetadataHash(deployedPath)
+		if err != nil {
+			log.Printf("Warning: failed to calculate metadata hash for %s: %v", result.Agent.Name, err)
+			metadataHash = ""
+		}
+
+		// Find source information from agent's file path
+		sourceName := ""
+		sourcePath := result.Agent.FilePath
+		priority := 999 // Default priority if not found
+
+		for srcPath, src := range sourceMap {
+			if strings.HasPrefix(result.Agent.FilePath, srcPath) {
+				sourceName = src.Name
+				priority = src.Priority
+				break
+			}
+		}
+
+		deployedAgents = append(deployedAgents, manifest.DeployedAgent{
+			Name:         result.Agent.Name,
+			Version:      result.Agent.Version,
+			Source:       sourceName,
+			SourcePath:   sourcePath,
+			Priority:     priority,
+			DeployedAt:   now,
+			ContentHash:  contentHash,
+			MetadataHash: metadataHash,
+		})
+	}
+
+	// Create/update project manifest
+	projectManifest := &manifest.ProjectManifest{
+		Version:      "1",
+		State:        manifest.StateCAMINative,
+		NormalizedAt: now,
+		Agents:       deployedAgents,
+	}
+
+	if err := manifest.WriteProjectManifest(projectPath, projectManifest); err != nil {
+		return fmt.Errorf("failed to write project manifest: %w", err)
+	}
+
+	// Update central manifest
+	centralManifest, err := manifest.ReadCentralManifest()
+	if err != nil {
+		return fmt.Errorf("failed to read central manifest: %w", err)
+	}
+
+	absPath, err := filepath.Abs(projectPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	centralManifest.Deployments[absPath] = manifest.ProjectDeployment{
+		State:        manifest.StateCAMINative,
+		NormalizedAt: now,
+		LastScanned:  now,
+		Agents:       deployedAgents,
+	}
+
+	if err := manifest.WriteCentralManifest(centralManifest); err != nil {
+		return fmt.Errorf("failed to write central manifest: %w", err)
+	}
+
+	return nil
 }
 
 func runTUI() error {
@@ -349,6 +450,12 @@ func registerMCPTools(server *mcp.Server) {
 		results, err := deploy.DeployAgents(agentsToDeploy, args.TargetPath, args.Overwrite)
 		if err != nil {
 			return nil, nil, fmt.Errorf("deployment failed: %w", err)
+		}
+
+		// Update manifests to track deployment
+		if err := updateDeploymentManifests(args.TargetPath, agentsToDeploy, results); err != nil {
+			log.Printf("Warning: failed to update deployment manifests: %v", err)
+			// Don't fail the deployment if manifest update fails
 		}
 
 		// Convert results to response format
