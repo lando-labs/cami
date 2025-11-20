@@ -1777,23 +1777,9 @@ func analyzeTechStackComponents(preference string) []string {
 		return components
 	}
 
-	// Default: extract components from preference string
-	// Example: "react-node-postgres" → ["React", "Node", "Postgres"]
-	parts := strings.Split(pref, "-")
-	components := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if part != "" {
-			// Capitalize first letter
-			components = append(components, strings.ToUpper(part[:1])+part[1:])
-		}
-	}
-
-	// If we couldn't extract anything, return generic components
-	if len(components) == 0 {
-		return []string{"Frontend", "Backend", "Database", "Testing"}
-	}
-
-	return components
+	// Fallback: return generic full-stack components for unknown preferences
+	// Users should use predefined options or describe custom needs in strategy field
+	return []string{"Frontend", "Backend", "Database", "Testing", "Infrastructure"}
 }
 
 // agentCoversComponent determines if an agent covers a specific tech stack component
