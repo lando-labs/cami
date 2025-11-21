@@ -6,11 +6,12 @@ CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynami
 
 ## Features
 
-- **13 MCP Tools**: Native Claude Code integration for agent management
+- **19 MCP Tools**: Native Claude Code integration for complete agent lifecycle management
 - **Global Agent Storage**: Single source of truth at `~/cami-workspace/sources/`
 - **Priority-Based Deduplication**: Override agents with custom versions (lower priority number = higher precedence)
+- **Deployment Tracking**: Automatic manifest creation tracking agent versions, sources, and hashes
+- **Normalization System**: Analyze and standardize project agent deployments
 - **Smart Documentation**: Automatic CLAUDE.md updates with deployed agent information
-- **Version Tracking**: Compare deployed versions with available updates
 - **Multiple Sources**: Manage agents from Git repositories with priority-based loading
 - **Git-Trackable Workspace**: Optionally version control your CAMI setup and custom agents
 
@@ -47,13 +48,13 @@ claude
 
 ```
 You: "Help me get started with CAMI"
-Claude: *uses mcp__cami__onboard to guide you*
+Claude: *uses mcp__cami__onboard to guide you through setup*
 
-You: "Add the official agent library"
-Claude: *uses mcp__cami__add_source*
+You: "Create a new agent for handling database operations"
+Claude: *works with agent-architect to create a custom agent*
 
-You: "What agents are available?"
-Claude: *uses mcp__cami__list_agents*
+You: "Deploy the agent to my project"
+Claude: *uses mcp__cami__deploy_agents*
 ```
 
 That's it! CAMI will guide you through adding agent sources and deploying agents to your projects.
@@ -110,19 +111,20 @@ agent_sources:
 
 ## MCP Tools
 
-CAMI provides 13 MCP tools for Claude Code:
+CAMI provides 19 MCP tools for Claude Code:
 
-**Project Creation**
+**Project Management**
 - `create_project` - Create new project with agents and documentation
+- `onboard` - Get personalized setup guidance
 
 **Agent Management**
 - `list_agents` - List all available agents from configured sources
-- `deploy_agents` - Deploy selected agents to `.claude/agents/`
+- `deploy_agents` - Deploy agents to `.claude/agents/` with automatic manifest tracking
 - `scan_deployed_agents` - Check deployed agents and version status
 - `update_claude_md` - Update CLAUDE.md with agent documentation
 
 **Source Management**
-- `list_sources` - List all configured agent sources
+- `list_sources` - List all configured agent sources with compliance status
 - `add_source` - Add new source by cloning Git repository
 - `update_source` - Pull latest from Git sources
 - `source_status` - Check Git status of sources
@@ -132,8 +134,12 @@ CAMI provides 13 MCP tools for Claude Code:
 - `list_locations` - List all tracked project locations
 - `remove_location` - Unregister project directory
 
-**Onboarding**
-- `onboard` - Get personalized setup guidance
+**Normalization (Phase 1)**
+- `detect_project_state` - Analyze project's CAMI integration level
+- `normalize_project` - Create manifests and link agents to sources
+- `detect_source_state` - Analyze source for CAMI compliance
+- `normalize_source` - Fix source agents to meet CAMI standards
+- `cleanup_backups` - Clean up old backup directories
 
 See [CLAUDE.md](CLAUDE.md) for complete MCP tool documentation and workflows.
 
@@ -230,10 +236,10 @@ cd ~/cami-workspace
 claude
 
 # Natural language interface
-"Add the official agent library"
-"What agents are available?"
-"Deploy frontend and backend agents to ~/projects/my-app"
-"Create a custom database agent"
+"Help me get started with CAMI"
+"Create a new agent for handling API integrations"
+"Deploy the agent to ~/projects/my-app"
+"What's the status of my deployed agents?"
 ```
 
 ### Git Tracking (Optional)
@@ -380,20 +386,31 @@ claude
 
 ### What's New in v0.3.0
 - ✅ Single binary with dual modes (MCP + CLI)
-- ✅ 13 MCP tools for complete Claude Code integration
+- ✅ 19 MCP tools for complete agent lifecycle management
+- ✅ Deployment tracking with automatic manifest creation
+- ✅ Normalization system (Phase 1 complete)
 - ✅ Project creation workflow with `create_project` tool
 - ✅ Global agent storage at `~/cami-workspace/sources/`
-- ✅ Inverted priority system (1 = highest, 100 = lowest)
-- ✅ Priority-based multi-source deduplication
-- ✅ Source management tools (add, update, status)
+- ✅ Priority-based multi-source deduplication (1 = highest, 100 = lowest)
+- ✅ Source compliance checking and normalization
 - ✅ .camiignore support with glob patterns
+- ✅ STRATEGIES.yaml for agent behavioral guidance
+
+### Current Status
+
+**Alpha Testing** - v0.3.0-alpha.3
+- Core functionality complete and tested
+- Normalization system operational
+- Ready for early adopter testing
+- Homebrew tap coming soon
 
 ### Roadmap
 
 **v0.4.0 (Planned)**
+- Official agent library (lando-agents)
 - Agent classification system
 - Remote agent sources (HTTP, direct Git URLs)
-- Enhanced agent-architect integration
+- Enhanced update detection
 - Team collaboration features
 
 ## License
