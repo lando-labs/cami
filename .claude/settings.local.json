@@ -39,7 +39,8 @@
       "Bash(checksums.txt)",
       "Bash(cat:*)",
       "Bash(go test:*)",
-      "Bash(go build:*)"
+      "Bash(go build:*)",
+      "Bash(make build:*)"
     ],
     "deny": [],
     "ask": []

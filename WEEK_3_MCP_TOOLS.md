@@ -152,7 +152,7 @@ Claude: *uses detect_project_state with current directory*
 **Features**:
 - Creates backup before normalization
 - Creates local manifest (`.claude/cami-manifest.yaml`)
-- Updates central manifest (`~/cami/deployments.yaml`)
+- Updates central manifest (`~/cami-workspace/deployments.yaml`)
 - Links agents to sources with priority tracking
 - Calculates content and metadata hashes
 - Detects agents needing upgrades

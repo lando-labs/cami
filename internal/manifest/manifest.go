@@ -121,7 +121,7 @@ func ReadCentralManifest() (*CentralManifest, error) {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	manifestPath := filepath.Join(homeDir, "cami", CentralManifestFilename)
+	manifestPath := filepath.Join(homeDir, "cami-workspace", CentralManifestFilename)
 
 	data, err := os.ReadFile(manifestPath)
 	if err != nil {
@@ -152,9 +152,9 @@ func WriteCentralManifest(manifest *CentralManifest) error {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	camiDir := filepath.Join(homeDir, "cami")
+	camiDir := filepath.Join(homeDir, "cami-workspace")
 	if err := os.MkdirAll(camiDir, 0755); err != nil {
-		return fmt.Errorf("failed to create cami directory: %w", err)
+		return fmt.Errorf("failed to create cami-workspace directory: %w", err)
 	}
 
 	manifestPath := filepath.Join(camiDir, CentralManifestFilename)

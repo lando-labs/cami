@@ -37,7 +37,7 @@ Phase 1 of CAMI's normalization system is **complete**. All core packages, MCP t
 
 **Key Types**:
 - `ProjectManifest` - Local project manifest (`.claude/cami-manifest.yaml`)
-- `CentralManifest` - Central workspace manifest (`~/cami/deployments.yaml`)
+- `CentralManifest` - Central workspace manifest (`~/cami-workspace/deployments.yaml`)
 - `DeployedAgent` - Agent metadata with content/metadata hashes
 - `ProjectState` - Four-state system (non-cami, cami-aware, cami-legacy, cami-native)
 
@@ -161,7 +161,7 @@ Claude: *uses detect_project_state*
 **Features**:
 - Creates backup before normalization
 - Creates local manifest (`.claude/cami-manifest.yaml`)
-- Updates central manifest (`~/cami/deployments.yaml`)
+- Updates central manifest (`~/cami-workspace/deployments.yaml`)
 - Links agents to sources with priority tracking
 - Provides undo capability via backup
 

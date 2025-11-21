@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "cami": {
+      "command": "cami",
+      "args": ["--mcp"],
+      "env": {}
+    }
+  }
+}
