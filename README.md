@@ -36,6 +36,21 @@ This creates:
 - `~/cami-workspace/` - Your CAMI workspace
 - `/usr/local/bin/cami` - Binary on your PATH
 
+### Platform Notes
+
+**WSL (Windows Subsystem for Linux)**
+
+CAMI works on WSL2. Requirements:
+- Go 1.21+ installed in WSL (not Windows)
+- `sudo` access configured in WSL
+- Git configured in WSL
+
+Then follow the standard installation instructions above.
+
+**macOS & Linux**
+
+Works on both Intel and Apple Silicon (arm64). Installation requires `sudo` for copying the binary to `/usr/local/bin`.
+
 ### First-Time Setup
 
 ```bash
