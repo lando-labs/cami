@@ -1216,12 +1216,12 @@ func registerMCPTools(server *mcp.Server) {
 			if err := os.WriteFile(claudeMdPath, []byte(args.VisionDoc), 0644); err != nil {
 				return nil, nil, fmt.Errorf("failed to write CLAUDE.md: %w", err)
 			}
+		}
 
-			// Update CLAUDE.md with deployed agents
-			if _, err := docs.UpdateCLAUDEmd(projectPath, "Deployed Agents", false); err != nil {
-				// Don't fail the whole operation if this fails, just warn
-				fmt.Fprintf(os.Stderr, "Warning: failed to update CLAUDE.md with agents: %v\n", err)
-			}
+		// Always update CLAUDE.md with deployed agents (creates file if it doesn't exist)
+		if _, err := docs.UpdateCLAUDEmd(projectPath, "Deployed Agents", false); err != nil {
+			// Don't fail the whole operation if this fails, just warn
+			fmt.Fprintf(os.Stderr, "Warning: failed to update CLAUDE.md with agents: %v\n", err)
 		}
 
 		// Register project location
