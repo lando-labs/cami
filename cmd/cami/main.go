@@ -1167,28 +1167,47 @@ func registerMCPTools(server *mcp.Server) {
 			return nil, nil, fmt.Errorf("failed to load agents: %w", err)
 		}
 
-		// Deploy requested agents
-		deployedAgents := []string{}
+		// Find agents to deploy
+		var agentsToDeploy []*agent.Agent
+		var notFound []string
 		for _, agentName := range args.AgentNames {
-			var agentToDeploy *agent.Agent
+			var found *agent.Agent
 			for _, a := range allAgents {
 				if a.Name == agentName {
-					agentToDeploy = a
+					found = a
 					break
 				}
 			}
 
-			if agentToDeploy == nil {
-				return nil, nil, fmt.Errorf("agent not found: %s", agentName)
+			if found == nil {
+				notFound = append(notFound, agentName)
+			} else {
+				agentsToDeploy = append(agentsToDeploy, found)
 			}
+		}
 
-			targetFile := filepath.Join(agentsPath, agentName+".md")
-			content := agentToDeploy.Content
-			if err := os.WriteFile(targetFile, []byte(content), 0644); err != nil {
-				return nil, nil, fmt.Errorf("failed to deploy agent %s: %w", agentName, err)
+		if len(notFound) > 0 {
+			return nil, nil, fmt.Errorf("agents not found: %v", notFound)
+		}
+
+		// Deploy agents using the proper deployment function
+		results, err := deploy.DeployAgents(agentsToDeploy, projectPath, false)
+		if err != nil {
+			return nil, nil, fmt.Errorf("deployment failed: %w", err)
+		}
+
+		// Update manifests to track deployment
+		if err := updateDeploymentManifests(projectPath, agentsToDeploy, results); err != nil {
+			log.Printf("Warning: failed to update deployment manifests: %v", err)
+			// Don't fail the deployment if manifest update fails
+		}
+
+		// Collect successfully deployed agent names
+		deployedAgents := []string{}
+		for _, result := range results {
+			if result.Success {
+				deployedAgents = append(deployedAgents, result.Agent.Name)
 			}
-
-			deployedAgents = append(deployedAgents, agentName)
 		}
 
 		// Write CLAUDE.md if vision doc provided
