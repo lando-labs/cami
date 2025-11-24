@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -11,6 +12,8 @@ import (
 // Config holds the application configuration
 type Config struct {
 	Version            string           `yaml:"version"`
+	InstallTimestamp   time.Time        `yaml:"install_timestamp,omitempty"`    // When CAMI was installed
+	SetupComplete      bool             `yaml:"setup_complete,omitempty"`       // Whether initial setup is complete
 	AgentSources       []AgentSource    `yaml:"agent_sources"`
 	Locations          []DeployLocation `yaml:"deploy_locations"`
 	DefaultProjectsDir string           `yaml:"default_projects_dir,omitempty"` // Where new projects are created by default
@@ -93,7 +96,50 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
+	// Migrate existing configs that don't have install_timestamp
+	cfg.migrateIfNeeded(configPath)
+
 	return &cfg, nil
+}
+
+// migrateIfNeeded applies migrations to existing configs
+func (c *Config) migrateIfNeeded(configPath string) {
+	needsSave := false
+
+	// Migration: Add install_timestamp if missing (use config file mtime)
+	if c.InstallTimestamp.IsZero() {
+		if fileInfo, err := os.Stat(configPath); err == nil {
+			c.InstallTimestamp = fileInfo.ModTime()
+			needsSave = true
+		}
+	}
+
+	// Migration: Set setup_complete based on whether sources exist
+	// Existing users who have sources should be considered "setup complete"
+	if !c.SetupComplete && len(c.AgentSources) > 0 {
+		// Check if it's not just the default my-agents source
+		hasRealSources := false
+		for _, source := range c.AgentSources {
+			if source.Name != "my-agents" {
+				hasRealSources = true
+				break
+			}
+			// Check if my-agents has git configured
+			if source.Git != nil && source.Git.Enabled {
+				hasRealSources = true
+				break
+			}
+		}
+		if hasRealSources {
+			c.SetupComplete = true
+			needsSave = true
+		}
+	}
+
+	if needsSave {
+		// Save silently - don't fail the load if migration save fails
+		_ = c.Save()
+	}
 }
 
 // Save writes the configuration to disk
@@ -219,5 +265,40 @@ func GetDefaultProjectsDir() (string, error) {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 	return filepath.Join(homeDir, "projects"), nil
+}
+
+// IsFreshInstall determines if this is a fresh CAMI installation
+// A fresh install is when:
+// - Config exists but setup_complete is false
+// - Only has default my-agents source with no git configured
+// - No agents have been loaded
+// - No locations tracked
+func (c *Config) IsFreshInstall() bool {
+	// If setup is marked complete, not a fresh install
+	if c.SetupComplete {
+		return false
+	}
+
+	// If no sources at all, it's fresh
+	if len(c.AgentSources) == 0 {
+		return true
+	}
+
+	// If only has default my-agents source with no git
+	if len(c.AgentSources) == 1 && c.AgentSources[0].Name == "my-agents" {
+		source := c.AgentSources[0]
+		hasGit := source.Git != nil && source.Git.Enabled
+		if !hasGit && len(c.Locations) == 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
+// MarkSetupComplete marks the initial setup as complete
+func (c *Config) MarkSetupComplete() error {
+	c.SetupComplete = true
+	return c.Save()
 }
 

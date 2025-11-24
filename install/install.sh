@@ -162,8 +162,13 @@ if [ ! -f "$INSTALL_DIR/config.yaml" ]; then
     mkdir -p "$PROJECTS_DIR"
     print_success "Default projects directory: $PROJECTS_DIR"
 
+    # Get current timestamp in RFC3339 format
+    INSTALL_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
     cat > "$INSTALL_DIR/config.yaml" <<EOF
 version: "1"
+install_timestamp: $INSTALL_TIMESTAMP
+setup_complete: false
 agent_sources:
   - name: my-agents
     type: local

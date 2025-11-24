@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -306,4 +307,151 @@ func TestRemoveDeployLocation(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid index")
 	})
+}
+
+func TestIsFreshInstall(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *Config
+		expected bool
+	}{
+		{
+			name: "fresh install - no sources",
+			config: &Config{
+				Version:            "1",
+				InstallTimestamp:   time.Now(),
+				SetupComplete:      false,
+				AgentSources:       []AgentSource{},
+				Locations:          []DeployLocation{},
+				DefaultProjectsDir: "/home/user/projects",
+			},
+			expected: true,
+		},
+		{
+			name: "fresh install - only my-agents with no git",
+			config: &Config{
+				Version:          "1",
+				InstallTimestamp: time.Now(),
+				SetupComplete:    false,
+				AgentSources: []AgentSource{
+					{
+						Name:     "my-agents",
+						Type:     "local",
+						Path:     "/home/user/cami-workspace/sources/my-agents",
+						Priority: 10,
+						Git: &GitConfig{
+							Enabled: false,
+						},
+					},
+				},
+				Locations:          []DeployLocation{},
+				DefaultProjectsDir: "/home/user/projects",
+			},
+			expected: true,
+		},
+		{
+			name: "not fresh - setup complete",
+			config: &Config{
+				Version:          "1",
+				InstallTimestamp: time.Now(),
+				SetupComplete:    true,
+				AgentSources: []AgentSource{
+					{
+						Name:     "my-agents",
+						Type:     "local",
+						Path:     "/home/user/cami-workspace/sources/my-agents",
+						Priority: 10,
+					},
+				},
+				Locations:          []DeployLocation{},
+				DefaultProjectsDir: "/home/user/projects",
+			},
+			expected: false,
+		},
+		{
+			name: "not fresh - has real source",
+			config: &Config{
+				Version:          "1",
+				InstallTimestamp: time.Now(),
+				SetupComplete:    false,
+				AgentSources: []AgentSource{
+					{
+						Name:     "my-agents",
+						Type:     "local",
+						Path:     "/home/user/cami-workspace/sources/my-agents",
+						Priority: 10,
+					},
+					{
+						Name:     "lando-agents",
+						Type:     "local",
+						Path:     "/home/user/cami-workspace/sources/lando-agents",
+						Priority: 100,
+						Git: &GitConfig{
+							Enabled: true,
+							Remote:  "git@github.com:lando-labs/lando-agents.git",
+						},
+					},
+				},
+				Locations:          []DeployLocation{},
+				DefaultProjectsDir: "/home/user/projects",
+			},
+			expected: false,
+		},
+		{
+			name: "not fresh - my-agents has git",
+			config: &Config{
+				Version:          "1",
+				InstallTimestamp: time.Now(),
+				SetupComplete:    false,
+				AgentSources: []AgentSource{
+					{
+						Name:     "my-agents",
+						Type:     "local",
+						Path:     "/home/user/cami-workspace/sources/my-agents",
+						Priority: 10,
+						Git: &GitConfig{
+							Enabled: true,
+							Remote:  "git@github.com:company/agents.git",
+						},
+					},
+				},
+				Locations:          []DeployLocation{},
+				DefaultProjectsDir: "/home/user/projects",
+			},
+			expected: false,
+		},
+		{
+			name: "not fresh - has locations",
+			config: &Config{
+				Version:          "1",
+				InstallTimestamp: time.Now(),
+				SetupComplete:    false,
+				AgentSources: []AgentSource{
+					{
+						Name:     "my-agents",
+						Type:     "local",
+						Path:     "/home/user/cami-workspace/sources/my-agents",
+						Priority: 10,
+					},
+				},
+				Locations: []DeployLocation{
+					{
+						Name: "my-project",
+						Path: "/home/user/projects/my-project",
+					},
+				},
+				DefaultProjectsDir: "/home/user/projects",
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.config.IsFreshInstall()
+			if result != tt.expected {
+				t.Errorf("IsFreshInstall() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
 }

@@ -1354,12 +1354,8 @@ func registerMCPTools(server *mcp.Server) {
 			}
 		}
 
-		// Detect fresh install: default my-agents source exists but is empty/unconfigured
-		state.IsFreshInstall = len(cfg.AgentSources) == 1 &&
-			cfg.AgentSources[0].Name == "my-agents" &&
-			(cfg.AgentSources[0].Git == nil || !cfg.AgentSources[0].Git.Enabled) &&
-			state.TotalAgents == 0 &&
-			len(cfg.Locations) == 0
+		// Detect fresh install using config method
+		state.IsFreshInstall = cfg.IsFreshInstall()
 
 		// Generate personalized guidance
 		if state.IsFreshInstall {

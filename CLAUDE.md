@@ -83,6 +83,8 @@ User's `~/cami-workspace/config.yaml`:
 
 ```yaml
 version: "1"
+install_timestamp: 2025-01-18T10:30:00Z  # When CAMI was installed
+setup_complete: true                      # Whether initial setup is complete
 agent_sources:
   - name: team-agents
     type: local
@@ -102,7 +104,14 @@ agent_sources:
 deploy_locations:
   - name: my-project
     path: ~/projects/my-project
+
+default_projects_dir: ~/projects  # Where new projects are created by default
 ```
+
+**New in v0.3.2**:
+- `install_timestamp`: Automatically set during installation (used for robust fresh install detection)
+- `setup_complete`: False on fresh install, true after adding real agent sources
+- Existing configs are automatically migrated on first load
 
 **Priority-based deduplication**: When the same agent exists in multiple sources, the lowest priority number wins (my-agents: 10 > team-agents: 50). Priority 1 = highest, 100 = lowest.
 
