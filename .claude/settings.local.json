@@ -40,7 +40,9 @@
       "Bash(cat:*)",
       "Bash(go test:*)",
       "Bash(go build:*)",
-      "Bash(make build:*)"
+      "Bash(make build:*)",
+      "Bash(git rm:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []
