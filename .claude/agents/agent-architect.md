@@ -1,8 +1,8 @@
 ---
 name: agent-architect
-version: "1.3.0"
+version: "2.0.0"
 description: Use this agent PROACTIVELY when you need to create, refine, or optimize Claude Code agent configurations. This includes designing new agents from scratch, improving existing agent system prompts, establishing agent interaction patterns, defining agent responsibilities and boundaries, or architecting multi-agent systems with clear separation of concerns.
-model: sonnet
+model: opus
 color: cyan
 ---
 
