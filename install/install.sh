@@ -144,6 +144,24 @@ fi
 # Create initial config if it doesn't exist
 if [ ! -f "$INSTALL_DIR/config.yaml" ]; then
     print_info "Creating initial config.yaml..."
+
+    # Prompt for default projects directory
+    echo ""
+    echo "Where do you want CAMI to create new projects by default?"
+    echo "Examples: ~/projects, ~/dev, ~/workspace, ~/code"
+    read -p "Default projects directory (press Enter for ~/projects): " PROJECTS_DIR
+
+    if [ -z "$PROJECTS_DIR" ]; then
+        PROJECTS_DIR="$HOME/projects"
+    else
+        # Expand ~ if present
+        PROJECTS_DIR="${PROJECTS_DIR/#\~/$HOME}"
+    fi
+
+    # Create directory if it doesn't exist
+    mkdir -p "$PROJECTS_DIR"
+    print_success "Default projects directory: $PROJECTS_DIR"
+
     cat > "$INSTALL_DIR/config.yaml" <<EOF
 version: "1"
 agent_sources:
@@ -155,6 +173,7 @@ agent_sources:
       enabled: false
 
 deploy_locations: []
+default_projects_dir: $PROJECTS_DIR
 EOF
 fi
 

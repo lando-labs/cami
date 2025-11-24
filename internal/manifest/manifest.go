@@ -35,6 +35,7 @@ type DeployedAgent struct {
 	MetadataHash   string    `yaml:"metadata_hash"`            // SHA256 of frontmatter only
 	CustomOverride bool      `yaml:"custom_override"`          // Intentionally customized
 	NeedsUpgrade   bool      `yaml:"needs_upgrade,omitempty"`  // Missing version, etc.
+	Origin         string    `yaml:"origin,omitempty"`         // "cami", "external", "manual"
 }
 
 // ProjectManifest represents a project's deployment manifest (local)

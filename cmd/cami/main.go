@@ -153,6 +153,7 @@ func updateDeploymentManifests(projectPath string, agents []*agent.Agent, result
 			DeployedAt:   now,
 			ContentHash:  contentHash,
 			MetadataHash: metadataHash,
+			Origin:       "cami", // Deployed via CAMI
 		})
 	}
 
@@ -362,6 +363,7 @@ type CreateProjectResponse struct {
 
 type OnboardingState struct {
 	ConfigExists    bool   `json:"config_exists"`
+	IsFreshInstall  bool   `json:"is_fresh_install"`
 	SourceCount     int    `json:"source_count"`
 	LocationCount   int    `json:"location_count"`
 	HasAgentArch    bool   `json:"has_agent_architect"`
@@ -372,6 +374,29 @@ type OnboardingState struct {
 
 type OnboardResponse struct {
 	State OnboardingState `json:"state"`
+}
+
+type ImportAgentsArgs struct {
+	ProjectPath string `json:"project_path" jsonschema_description:"Absolute path to project directory to scan and import agents from"`
+	DryRun      bool   `json:"dry_run,omitempty" jsonschema_description:"If true, preview what would be imported without making changes"`
+}
+
+type ImportedAgent struct {
+	Name         string `json:"name"`
+	Version      string `json:"version"`
+	FilePath     string `json:"file_path"`
+	Origin       string `json:"origin"`       // "cami" if matches source, "external" otherwise
+	SourceMatch  string `json:"source_match"` // Source name if matched
+	ContentHash  string `json:"content_hash"`
+	MetadataHash string `json:"metadata_hash"`
+}
+
+type ImportAgentsResponse struct {
+	ProjectPath    string          `json:"project_path"`
+	AgentsFound    int             `json:"agents_found"`
+	AgentsImported int             `json:"agents_imported"`
+	Agents         []ImportedAgent `json:"agents"`
+	DryRun         bool            `json:"dry_run"`
 }
 
 func runMCPServer() {
@@ -1329,13 +1354,76 @@ func registerMCPTools(server *mcp.Server) {
 			}
 		}
 
+		// Detect fresh install: default my-agents source exists but is empty/unconfigured
+		state.IsFreshInstall = len(cfg.AgentSources) == 1 &&
+			cfg.AgentSources[0].Name == "my-agents" &&
+			(cfg.AgentSources[0].Git == nil || !cfg.AgentSources[0].Git.Enabled) &&
+			state.TotalAgents == 0 &&
+			len(cfg.Locations) == 0
+
 		// Generate personalized guidance
+		if state.IsFreshInstall {
+			// Fresh install - present three paths
+			configDir, _ := config.GetConfigDir()
+			defaultProjectsDir, _ := config.GetDefaultProjectsDir()
+
+			responseText = "# Welcome to CAMI! 🌊\n\n"
+			responseText += "I see this is a fresh installation. Let me guide you through getting started.\n\n"
+			responseText += "## Your CAMI Setup\n\n"
+			responseText += fmt.Sprintf("**CAMI Workspace** (Agent Building): `%s/`\n", configDir)
+			responseText += "  → Where agent sources and configuration live\n"
+			responseText += "  → Manage and create agents globally\n\n"
+			responseText += fmt.Sprintf("**Development Workspace** (Projects): `%s/`\n", defaultProjectsDir)
+			responseText += "  → Where your projects live\n"
+			responseText += "  → Where agents get deployed\n\n"
+			responseText += "---\n\n"
+			responseText += "## Three Paths Forward\n\n"
+			responseText += "**Path 1: Add Agent Library** (Recommended for new users)\n"
+			responseText += "  → Get pre-built professional agents from a Git repository\n"
+			responseText += "  → I can help you find and add agent sources\n"
+			responseText += "  → Tell me: 'Add agent source from <git-url>'\n\n"
+			responseText += "**Path 2: Create Custom Agents**\n"
+			responseText += "  → Work with agent-architect to build specialized agents\n"
+			responseText += "  → Best if you have specific needs\n"
+			responseText += "  → Tell me: 'Create a new agent for [task]'\n\n"
+			responseText += "**Path 3: Import Existing Agents**\n"
+			responseText += "  → Already have agents deployed in other projects?\n"
+			responseText += "  → I can scan and track them in CAMI\n"
+			responseText += "  → Tell me: 'Import agents from [project-path]'\n\n"
+			responseText += "**Which path interests you?**\n"
+
+			state.RecommendedNext = "Choose your onboarding path"
+
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, &OnboardResponse{State: state}, nil
+		}
+
+		// Not fresh install - standard status
 		responseText = "# CAMI Setup Status\n\n"
+
+		// Show workspace locations
+		configDir, _ := config.GetConfigDir()
+		responseText += "## Your CAMI Setup\n\n"
+		responseText += fmt.Sprintf("**CAMI Workspace**: `%s/`\n", configDir)
+		responseText += "  → Where agent sources and config live\n\n"
+
+		if cfg.DefaultProjectsDir != "" {
+			responseText += fmt.Sprintf("**Development Workspace**: `%s/`\n", cfg.DefaultProjectsDir)
+			responseText += "  → Where your projects live\n\n"
+		}
+
+		if len(cfg.Locations) > 0 {
+			responseText += fmt.Sprintf("**Tracked Projects**: %d\n", len(cfg.Locations))
+			responseText += "  → Projects CAMI knows about\n\n"
+		}
+
+		responseText += "---\n\n"
 
 		responseText += "## Agent Sources\n"
 		if state.SourceCount == 0 {
 			responseText += "⚠️ **No agent sources configured**\n\n"
-			responseText += "**Recommended:** Add an agent source with `mcp__cami__add_source`\n"
+			responseText += "**Recommended:** Add an agent source with `add_source`\n"
 			responseText += "- Provide a Git URL to your agent repository\n\n"
 			state.RecommendedNext = "Add agent sources"
 		} else if state.TotalAgents == 0 {
@@ -1386,6 +1474,250 @@ func registerMCPTools(server *mcp.Server) {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
 		}, &OnboardResponse{State: state}, nil
+	})
+
+	// Register import_agents tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "import_agents",
+		Description: "Import and track agents that were deployed outside of CAMI. " +
+			"WHEN TO USE: User has existing .claude/agents/ from manual deployment or other tools. " +
+			"WORKFLOW: " +
+			"1) Scan the specified project's .claude/agents/ directory " +
+			"2) Parse agent frontmatter (name, version, description) " +
+			"3) Try to match agents to known sources (by name + version + content hash) " +
+			"4) Show preview of what will be imported (use dry_run=true) " +
+			"5) Ask user to confirm import " +
+			"6) Create manifest entries with origin='external' or origin='cami' if matched " +
+			"7) Update local and central manifests " +
+			"BENEFITS: Brings existing agents into CAMI's tracking system for updates, version management, etc.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args ImportAgentsArgs) (*mcp.CallToolResult, any, error) {
+		// Validate project path
+		agentsPath := filepath.Join(args.ProjectPath, ".claude", "agents")
+		if _, err := os.Stat(agentsPath); err != nil {
+			if os.IsNotExist(err) {
+				return nil, nil, fmt.Errorf("no .claude/agents/ directory found at %s", args.ProjectPath)
+			}
+			return nil, nil, fmt.Errorf("failed to access agents directory: %w", err)
+		}
+
+		// Load available agents from sources for matching
+		cfg, err := config.Load()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load config: %w", err)
+		}
+
+		var availableAgents []*agent.Agent
+		if len(cfg.AgentSources) > 0 {
+			agentSources := make([]agent.AgentSource, len(cfg.AgentSources))
+			for i, src := range cfg.AgentSources {
+				agentSources[i] = agent.AgentSource{
+					Path:     src.Path,
+					Priority: src.Priority,
+				}
+			}
+			availableAgents, _ = agent.LoadAgentsFromSources(agentSources)
+		}
+
+		// Create source map for lookups
+		sourceMap := make(map[string]*config.AgentSource)
+		for i := range cfg.AgentSources {
+			sourceMap[cfg.AgentSources[i].Path] = &cfg.AgentSources[i]
+		}
+
+		// Scan deployed agents
+		files, err := os.ReadDir(agentsPath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read agents directory: %w", err)
+		}
+
+		var importedAgents []ImportedAgent
+		var deployedAgents []manifest.DeployedAgent
+		now := time.Now()
+
+		for _, file := range files {
+			if file.IsDir() || filepath.Ext(file.Name()) != ".md" {
+				continue
+			}
+
+			agentPath := filepath.Join(agentsPath, file.Name())
+
+			// Parse agent frontmatter
+			agentData, err := agent.LoadAgent(agentPath)
+			if err != nil {
+				log.Printf("Warning: failed to parse %s: %v", file.Name(), err)
+				continue
+			}
+
+			// Calculate hashes
+			contentHash, _ := manifest.CalculateContentHash(agentPath)
+			metadataHash, _ := manifest.CalculateMetadataHash(agentPath)
+
+			// Try to match to known sources
+			var matchedSource string
+			var matchedSourcePath string
+			var matchedPriority int
+			origin := "external"
+
+			for _, available := range availableAgents {
+				if available.Name == agentData.Name {
+					// Calculate hash of source agent
+					sourceContentHash, _ := manifest.CalculateContentHash(available.FilePath)
+
+					if sourceContentHash == contentHash {
+						// Exact match - this came from a source
+						origin = "cami"
+						matchedSource = "" // Find source name from path
+						matchedSourcePath = available.FilePath
+
+						// Find source name
+						for srcPath, src := range sourceMap {
+							if strings.HasPrefix(available.FilePath, srcPath) {
+								matchedSource = src.Name
+								matchedPriority = src.Priority
+								break
+							}
+						}
+						break
+					}
+				}
+			}
+
+			imported := ImportedAgent{
+				Name:         agentData.Name,
+				Version:      agentData.Version,
+				FilePath:     agentPath,
+				Origin:       origin,
+				SourceMatch:  matchedSource,
+				ContentHash:  contentHash,
+				MetadataHash: metadataHash,
+			}
+			importedAgents = append(importedAgents, imported)
+
+			// Prepare manifest entry
+			deployed := manifest.DeployedAgent{
+				Name:         agentData.Name,
+				Version:      agentData.Version,
+				Source:       matchedSource,
+				SourcePath:   matchedSourcePath,
+				Priority:     matchedPriority,
+				DeployedAt:   now,
+				ContentHash:  contentHash,
+				MetadataHash: metadataHash,
+				Origin:       origin,
+			}
+			deployedAgents = append(deployedAgents, deployed)
+		}
+
+		response := ImportAgentsResponse{
+			ProjectPath:    args.ProjectPath,
+			AgentsFound:    len(importedAgents),
+			AgentsImported: 0,
+			Agents:         importedAgents,
+			DryRun:         args.DryRun,
+		}
+
+		// Format response text
+		var responseText string
+		responseText = fmt.Sprintf("# Import Agents: %s\n\n", args.ProjectPath)
+
+		if len(importedAgents) == 0 {
+			responseText += "No agents found to import.\n"
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, &response, nil
+		}
+
+		responseText += fmt.Sprintf("**Agents Found:** %d\n\n", len(importedAgents))
+
+		// Group by origin
+		camiAgents := []ImportedAgent{}
+		externalAgents := []ImportedAgent{}
+		for _, a := range importedAgents {
+			if a.Origin == "cami" {
+				camiAgents = append(camiAgents, a)
+			} else {
+				externalAgents = append(externalAgents, a)
+			}
+		}
+
+		if len(camiAgents) > 0 {
+			responseText += "## Matched to CAMI Sources\n\n"
+			for _, a := range camiAgents {
+				responseText += fmt.Sprintf("- **%s** (v%s) - Source: `%s`\n", a.Name, a.Version, a.SourceMatch)
+			}
+			responseText += "\n"
+		}
+
+		if len(externalAgents) > 0 {
+			responseText += "## External Agents (No Source Match)\n\n"
+			for _, a := range externalAgents {
+				version := a.Version
+				if version == "" {
+					version = "no version"
+				}
+				responseText += fmt.Sprintf("- **%s** (%s)\n", a.Name, version)
+			}
+			responseText += "\n"
+		}
+
+		if args.DryRun {
+			responseText += "---\n\n"
+			responseText += "**This is a dry run - no changes were made.**\n\n"
+			responseText += "To import these agents, call this tool again with `dry_run=false`.\n"
+
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, &response, nil
+		}
+
+		// Actually import - create manifests
+		projectManifest := &manifest.ProjectManifest{
+			Version:      "1",
+			State:        manifest.StateCAMINative,
+			NormalizedAt: now,
+			Agents:       deployedAgents,
+		}
+
+		if err := manifest.WriteProjectManifest(args.ProjectPath, projectManifest); err != nil {
+			return nil, nil, fmt.Errorf("failed to write project manifest: %w", err)
+		}
+
+		// Update central manifest
+		centralManifest, err := manifest.ReadCentralManifest()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read central manifest: %w", err)
+		}
+
+		absPath, err := filepath.Abs(args.ProjectPath)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get absolute path: %w", err)
+		}
+
+		centralManifest.Deployments[absPath] = manifest.ProjectDeployment{
+			State:        manifest.StateCAMINative,
+			NormalizedAt: now,
+			LastScanned:  now,
+			Agents:       deployedAgents,
+		}
+
+		if err := manifest.WriteCentralManifest(centralManifest); err != nil {
+			return nil, nil, fmt.Errorf("failed to write central manifest: %w", err)
+		}
+
+		response.AgentsImported = len(importedAgents)
+
+		responseText += "---\n\n"
+		responseText += "✅ **Import Complete!**\n\n"
+		responseText += fmt.Sprintf("- Imported %d agents\n", len(importedAgents))
+		responseText += fmt.Sprintf("- %d matched to sources\n", len(camiAgents))
+		responseText += fmt.Sprintf("- %d external agents\n", len(externalAgents))
+		responseText += "- Created project manifest\n"
+		responseText += "- Updated central deployment tracking\n\n"
+		responseText += "These agents are now tracked by CAMI for version management and updates!\n"
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, &response, nil
 	})
 
 	// Register detect_source_state tool

@@ -10,9 +10,10 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	Version      string           `yaml:"version"`
-	AgentSources []AgentSource    `yaml:"agent_sources"`
-	Locations    []DeployLocation `yaml:"deploy_locations"`
+	Version            string           `yaml:"version"`
+	AgentSources       []AgentSource    `yaml:"agent_sources"`
+	Locations          []DeployLocation `yaml:"deploy_locations"`
+	DefaultProjectsDir string           `yaml:"default_projects_dir,omitempty"` // Where new projects are created by default
 }
 
 // AgentSource represents a source of agents
@@ -202,5 +203,21 @@ func (c *Config) RemoveDeployLocationByName(name string) error {
 		}
 	}
 	return fmt.Errorf("location with name %q not found", name)
+}
+
+// GetDefaultProjectsDir returns the default directory for creating new projects
+// Falls back to ~/projects if not configured
+func GetDefaultProjectsDir() (string, error) {
+	cfg, err := Load()
+	if err == nil && cfg.DefaultProjectsDir != "" {
+		return cfg.DefaultProjectsDir, nil
+	}
+
+	// Fall back to ~/projects if not configured
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+	return filepath.Join(homeDir, "projects"), nil
 }
 
