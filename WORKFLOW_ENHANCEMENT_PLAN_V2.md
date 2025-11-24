@@ -10,12 +10,21 @@
 
 ## Agent Classification System (Core Foundation)
 
-### Three Agent Classes
+### Agent Class Overview
 
-#### 1. Workflow Specialists
+| Technical Name | User-Friendly Name | Purpose | When to Use |
+|----------------|-------------------|---------|-------------|
+| **Workflow Specialist** | Task Automator | Execute specific checklists | You have a repeatable process |
+| **Technology Implementer** | Feature Builder | Build complete capabilities | You need a full feature/screen/API |
+| **Strategic Planner** | System Architect | Plan and research | You need high-level guidance |
+
+### Three Agent Classes (Detailed)
+
+#### 1. Workflow Specialists (aka "Task Automators")
 **Purpose**: Execute specific, user-defined workflows reliably
 **Cognitive Model**: Single-purpose checklist executors
 **Phase Weights**: Research (10-15%) → Execute (70-80%) → Validate (10-15%)
+**User-Friendly Name**: "Task Automators" or "Workflow Runners"
 
 **Key Characteristics**:
 - User provides the workflow/checklist during creation
@@ -35,10 +44,11 @@
 - "Handle all deployments" (too general)
 - "Fix bugs" (no specific workflow)
 
-#### 2. Technology Implementers
+#### 2. Technology Implementers (aka "Feature Builders")
 **Purpose**: Build complete capabilities in specific domains
 **Cognitive Model**: Domain specialists who implement features
 **Phase Weights**: Research (25-30%) → Execute (50-60%) → Validate (15-20%)
+**User-Friendly Name**: "Feature Builders" or "Domain Experts"
 
 **Key Characteristics**:
 - Domain experts (frontend, backend, database, etc.)
@@ -53,10 +63,11 @@
 - `auth-system`: Complete authentication implementation
 - `payment-integration`: Full payment processing
 
-#### 3. Strategic Planners
+#### 3. Strategic Planners (aka "System Architects")
 **Purpose**: Architect systems, research technologies, optimize at scale
 **Cognitive Model**: System architects and researchers
 **Phase Weights**: Research (40-50%) → Execute (25-35%) → Validate (20-25%)
+**User-Friendly Name**: "System Architects" or "Tech Advisors"
 
 **Key Characteristics**:
 - High-level planning and architecture
@@ -496,17 +507,17 @@ Description: "Create a new project with proper CAMI setup. " +
     "### Agent Recommendation: Capability-Based with Class Awareness\n" +
     "Based on what they're building, suggest agent classes:\n\n" +
 
-    "**Workflow Specialists** (when they need specific processes):\n" +
+    "**Task Automators** (Workflow Specialists - when they need specific processes):\n" +
     "  - 'Need to deploy regularly?' → deployment-workflow agent\n" +
     "  - 'Checking service health?' → health-check-workflow agent\n" +
     "  - 'Building specific components?' → component-builder agent\n\n" +
 
-    "**Technology Implementers** (when they need full features):\n" +
+    "**Feature Builders** (Technology Implementers - when they need full features):\n" +
     "  - 'Building user interfaces?' → frontend agent\n" +
     "  - 'Need data storage?' → database agent\n" +
     "  - 'Processing payments?' → payment-integration agent\n\n" +
 
-    "**Strategic Planners** (when they need guidance):\n" +
+    "**System Architects** (Strategic Planners - when they need guidance):\n" +
     "  - 'Not sure about architecture?' → architect agent (offer proactively)\n" +
     "  - 'Need to evaluate technologies?' → researcher agent\n" +
     "  - 'Optimizing performance?' → performance agent\n\n" +
@@ -515,8 +526,8 @@ Description: "Create a new project with proper CAMI setup. " +
     "If no match → Offer agent creation with agent-architect\n\n" +
 
     "### Scope Awareness: Match Agent Classes to Project Complexity\n" +
-    "Simple app → Workflow Specialists + Technology Implementers\n" +
-    "Complex system → Add Strategic Planner for integration/architecture\n" +
+    "Simple app → Task Automators + Feature Builders\n" +
+    "Complex system → Add System Architect for integration/architecture\n" +
     "'Not sure about architecture?' → Suggest architect agent proactively\n\n" +
 
     "### Confirmation: Vision-Focused Summary\n" +
