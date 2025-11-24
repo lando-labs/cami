@@ -873,6 +873,106 @@ description: Use this agent when building user interfaces...
 
 CAMI tracks versions to detect when updates are available via `scan_deployed_agents`.
 
+## Agent Classification System
+
+### Overview
+
+CAMI v0.4.0+ includes a three-class agent system that organizes agents by cognitive model and work style. Each class has different phase weights for the universal three-phase methodology (Research → Execute → Validate).
+
+### The Three Classes
+
+| Class | User-Friendly Name | Purpose | Phase Weights |
+|-------|-------------------|---------|---------------|
+| **workflow-specialist** | Task Automator | Execute specific, user-defined workflows | Research 15% → Execute 70% → Validate 15% |
+| **technology-implementer** | Feature Builder | Build complete capabilities in specific domains | Research 30% → Execute 55% → Validate 15% |
+| **strategic-planner** | System Architect | Architect systems, research, optimize at scale | Research 45% → Execute 30% → Validate 25% |
+
+### Agent Schema
+
+Agents include optional `class` and `specialty` fields in frontmatter:
+
+```yaml
+---
+name: frontend
+version: "1.1.0"
+description: Use this agent PROACTIVELY when building user interfaces...
+class: technology-implementer
+specialty: react-development
+---
+```
+
+**Fields**:
+- `class` (optional): One of `workflow-specialist`, `technology-implementer`, or `strategic-planner`
+- `specialty` (optional): Domain/specialty (e.g., `kubernetes-operations`, `react-development`, `system-architecture`)
+
+### Code Implementation
+
+**Agent Struct** (`internal/agent/agent.go`):
+```go
+type Agent struct {
+    Name        string `yaml:"name"`
+    Version     string `yaml:"version"`
+    Description string `yaml:"description"`
+    Class       string `yaml:"class,omitempty"`
+    Specialty   string `yaml:"specialty,omitempty"`
+    // ...
+}
+```
+
+**Phase Weights** (`internal/agent/agent.go`):
+```go
+// GetPhaseWeights returns phase distribution for an agent
+func (a *Agent) GetPhaseWeights() PhaseWeights {
+    return GetPhaseWeightsByClass(a.Class)
+}
+
+// GetPhaseWeightsByClass maps class to phase percentages
+func GetPhaseWeightsByClass(class string) PhaseWeights {
+    // Returns default balanced weights if class not specified
+}
+
+// GetUserFriendlyClassName returns "Task Automator", "Feature Builder", etc.
+func GetUserFriendlyClassName(class string) string {
+    // Maps technical names to user-friendly names
+}
+```
+
+### Auto-Classification
+
+**Agent-architect v3.0.0+** automatically classifies agents based on request signals:
+
+- **Workflow Specialist**: Requests mention checklists, procedures, workflows, repeatable processes
+- **Technology Implementer**: Requests about building features, implementing capabilities, domain-specific work
+- **Strategic Planner**: Requests about architecture, research, planning, optimization, high-level decisions
+
+### Workflow Gathering (CAMI's Role)
+
+CAMI (not agent-architect) gathers class-specific information before invoking agent-architect:
+
+**For Workflow Specialists**:
+- Offers 3 input methods: describe conversationally, provide file, or point to docs
+- Gathers step-by-step workflow with success/failure criteria
+- Confirms workflow before agent creation
+
+**For Technology Implementers**:
+- Asks about technology/framework versions
+- Identifies integration points
+- Notes patterns and conventions
+
+**For Strategic Planners**:
+- Understands constraints (timeline, budget, scale, team size)
+- Identifies key tradeoffs
+- Maps current state vs desired state
+
+This separation ensures agent-architect focuses on agent generation while CAMI handles conversational requirements gathering.
+
+### Backward Compatibility
+
+- Fields are optional (`omitempty` in YAML)
+- Existing agents without class/specialty continue to work
+- Default balanced weights (30/50/20) used if class not specified
+- Parser handles both old and new frontmatter formats
+
 ## Internal Architecture (for AI understanding)
 
 ### Code Structure
