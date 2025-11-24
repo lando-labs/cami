@@ -123,46 +123,55 @@ Me: "For multi-cloud deployment, you'd want specialists for:
 
 This conversational approach adapts to your specific needs and context rather than using rigid component matching.
 
-### When Your Roster Needs an Architect
+### Creating Projects vs Creating Agents
 
-Not every agent roster needs an architect - it depends on what you're building:
+**When you want to start a new project**, use `create_project` - I'll help you think through what you're building and recommend the right agent team:
 
-**Application/Product Development** (e-commerce, SaaS, social platform):
+**Example: Creating an Application Project**
 ```
-You: "I'm building an e-commerce platform"
-Me: "For an e-commerce application, you'll want a team that includes:
+You: "I want to create a new e-commerce project"
+Me: "Let me help you set up your project. What are you building?"
+You: "Online store with product catalog, cart, checkout, admin dashboard"
+Me: "For an e-commerce application, you'll want specialists for:
      - architect (coordinates integration, API contracts, data flow)
-     - frontend specialist (React 19+, Next.js 15+ storefront)
-     - backend specialist (Node.js 20+ APIs)
-     - database specialist (PostgreSQL 15+ for products, orders, users)
-     - payment specialist (Stripe/payment processing)
-     - security specialist (PCI compliance, auth)
-     - qa specialist (testing critical payment flows)
+     - frontend (React 19+ storefront, product pages, checkout UI)
+     - backend (Node.js 20+ APIs for products, orders, payments)
+     - database (PostgreSQL 15+ for products, orders, users)
+     - payment-integration (Stripe/payment processing)
+     - security (PCI compliance, authentication)
+     - qa (testing critical payment flows)
 
-     The architect agent will coordinate between specialists to ensure
-     everything integrates properly. Should we create these agents?"
+     The architect will coordinate between specialists. Should we create
+     this project with these agents?"
+You: "Yes"
+Me: *uses create_project to set up project with all agents*
 ```
 
-**Guild of Specialists** (deployment tools, cloud providers, utilities):
+**Example: Creating a Specialist Collection**
 ```
-You: "I'm collecting deployment agents for multi-cloud"
-Me: "For a multi-cloud deployment guild, you'll want:
+You: "I want to create cloud deployment agents"
+Me: "Are you building an application that needs deployment, or creating
+     a collection of deployment tools?"
+You: "Just a collection of tools I can use across projects"
+Me: "For independent deployment tools, you'll want:
      - aws-deploy (ECS, Lambda, CloudFormation)
      - gcp-deploy (Cloud Run, GKE, Terraform)
      - azure-deploy (AKS, App Service, Bicep)
 
-     These are independent tools - no architect needed since they don't
-     need to coordinate with each other. Should we create these?"
+     These are standalone specialists - no architect needed. Want to
+     create them in your my-agents source?"
+You: "Yes"
+Me: *creates each agent individually, saves to my-agents*
 ```
 
 **When to Include an Architect**:
-- ✅ Building applications/products where pieces need to integrate
-- ✅ Multiple specialists that need coordination (frontend ↔ backend ↔ database)
+- ✅ **Use `create_project`** for applications where pieces integrate
+- ✅ Multiple specialists need coordination (frontend ↔ backend ↔ database)
 - ✅ Complex data flows or integration points
-- ✅ Need someone to define API contracts and architecture patterns
-- ❌ NOT for guilds of independent specialist tools
+- ✅ Need API contracts and architecture patterns defined
+- ❌ **Just create specialists** for independent tools that don't need coordination
 
-**What an Architect Agent Does** (when needed):
+**What an Architect Agent Does** (in projects):
 - Coordinates integration between specialists
 - Defines API contracts and data schemas
 - Makes architecture decisions (monolith vs microservices, caching strategies)
@@ -185,9 +194,95 @@ I'll deploy the specified agents to your project's `.claude/agents/` directory.
 
 ### Creating Custom Agents
 
-Ask: **"Help me create a new database agent"**
+Ask: **"Help me create a new agent for [task/domain]"**
 
-I'll work with agent-architect to design a specialized agent for your needs, then save it to `sources/my-agents/`.
+I'll guide you through creating a specialized agent with agent-architect, gathering the right details based on what you're building.
+
+#### The Three Agent Classes
+
+Every agent belongs to one of three classes, each optimized for different types of work:
+
+| Class | User-Friendly Name | Best For | Examples |
+|-------|-------------------|----------|----------|
+| **Workflow Specialist** | Task Automator | Repeatable checklists & processes | k8s-pod-checker, deployment-to-staging |
+| **Technology Implementer** | Feature Builder | Building complete features/capabilities | frontend, backend, database, auth-system |
+| **Strategic Planner** | System Architect | Planning, research, architecture | architect, researcher, security, performance |
+
+#### My Agent Creation Workflow
+
+When you ask me to create an agent, I'll:
+
+1. **Detect the Agent Class** based on your request:
+   - Mentions of "checklist", "workflow", "procedure" → Workflow Specialist
+   - Mentions of "build", "create feature", "implement" → Technology Implementer
+   - Mentions of "architect", "research", "plan", "optimize" → Strategic Planner
+
+2. **Gather Class-Specific Details**:
+
+   **For Workflow Specialists** (Task Automators):
+   - Ask: "What's the specific workflow/process?"
+   - Offer three ways to provide it:
+     - **Describe it**: Walk me through the steps conversationally
+     - **Provide a file**: Share a markdown checklist, shell script, or YAML workflow
+     - **Point to docs**: Give me a link or file path with the procedure
+   - I'll structure it into clear steps with success/failure criteria
+   - Confirm the workflow before creating the agent
+
+   **For Technology Implementers** (Feature Builders):
+   - Ask about the technology/framework you're using
+   - Understand the main capabilities needed
+   - Identify integration points with other parts of your system
+   - Note any specific patterns or conventions to follow
+
+   **For Strategic Planners** (System Architects):
+   - Ask what decisions need to be made
+   - Understand key constraints (timeline, budget, scale, team size)
+   - Identify tradeoffs that matter (speed vs quality, cost vs features)
+   - Map current state vs desired state
+
+3. **Invoke agent-architect** with all the gathered details to generate the agent
+
+4. **Save to sources/my-agents/** so it's available for all your projects
+
+#### Example Workflows
+
+**Creating a Workflow Specialist**:
+```
+You: "I need an agent to deploy my app to staging"
+Me: "That sounds like a deployment workflow. What are the steps?"
+You: "Run tests, build Docker image, push to registry, deploy to k8s staging"
+Me: "Got it. For each step:
+     - Run tests: What command? (npm test)
+     - Build image: What's the tag pattern? (app:staging-{git-sha})
+     - Push: Which registry? (ghcr.io/myorg/app)
+     - Deploy: How? (kubectl apply -f k8s/staging/)
+
+     What indicates success vs failure for each step?"
+You: [provides details]
+Me: *creates workflow-specialist agent with embedded workflow*
+```
+
+**Creating a Technology Implementer**:
+```
+You: "I need a frontend agent for React development"
+Me: "What React version and key technologies are you using?"
+You: "React 19, Next.js 15, Tailwind CSS, TypeScript"
+Me: "Any specific patterns or component library?"
+You: "Shadcn UI components, server components where possible"
+Me: *creates technology-implementer agent with React 19/Next.js 15 expertise*
+```
+
+**Creating a Strategic Planner**:
+```
+You: "I need an architect agent for my enterprise app"
+Me: "What kind of application are you building?"
+You: "HR management system with payroll, benefits, performance reviews"
+Me: "What are your key constraints?"
+You: "Team of 5 devs, need to integrate with existing LDAP, must support 10k users"
+Me: "What architectural concerns matter most?"
+You: "Data privacy (GDPR), audit logging, scalability, integration patterns"
+Me: *creates strategic-planner agent for enterprise architecture with integration focus*
+```
 
 ### Updating Agents
 
