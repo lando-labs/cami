@@ -63,3 +63,25 @@ tech_stack:
     - This tech stack guides WHICH technologies to emphasize (your guild's focus)
     - agent-architect's tech stack specs ensure DEPTH of expertise (meta-level)
     - Together they ensure agents are both relevant AND expert
+
+# ==============================================================================
+# Documentation Strategy
+# ==============================================================================
+# Guides where agents create documentation files (ADRs, design docs, etc.)
+
+documentation:
+  # Default location for agent-generated documentation
+  # Use project root to make docs easy to find, not scattered in subdirectories
+  location: "<project-root>/reference/"
+
+  # Examples:
+  # ✅ Correct: /Users/username/my-project/reference/api-design.md
+  # ❌ Wrong:   /Users/username/my-project/web/reference/api-design.md
+
+  # Agents will mark AI-generated documentation with headers:
+  # <!--
+  # AI-Generated Documentation
+  # Created by: [agent-name]
+  # Date: YYYY-MM-DD
+  # Purpose: [brief description]
+  # -->
