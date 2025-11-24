@@ -15,7 +15,9 @@ type Agent struct {
 	Name        string `yaml:"name"`
 	Version     string `yaml:"version"`
 	Description string `yaml:"description"`
-	Category    string `yaml:"-"` // Folder name (e.g., "core", "specialized")
+	Class       string `yaml:"class,omitempty"`     // workflow-specialist, technology-implementer, strategic-planner
+	Specialty   string `yaml:"specialty,omitempty"` // Domain/specialty (e.g., "kubernetes-operations", "react-development")
+	Category    string `yaml:"-"`                   // Folder name (e.g., "core", "specialized")
 	FilePath    string `yaml:"-"`
 	Content     string `yaml:"-"`
 }
@@ -25,6 +27,8 @@ type Metadata struct {
 	Name        string `yaml:"name"`
 	Version     string `yaml:"version"`
 	Description string `yaml:"description"`
+	Class       string `yaml:"class,omitempty"`
+	Specialty   string `yaml:"specialty,omitempty"`
 }
 
 // LoadAgentsFromPath reads all agents from a directory (supports nested folders)
@@ -254,6 +258,8 @@ func LoadAgent(filePath string) (*Agent, error) {
 		Name:        metadata.Name,
 		Version:     metadata.Version,
 		Description: metadata.Description,
+		Class:       metadata.Class,
+		Specialty:   metadata.Specialty,
 		FilePath:    filePath,
 		Content:     content,
 	}, nil
@@ -261,12 +267,18 @@ func LoadAgent(filePath string) (*Agent, error) {
 
 // FullContent returns the complete agent file content including frontmatter
 func (a *Agent) FullContent() string {
-	frontmatter := fmt.Sprintf(`---
-name: %s
-version: %s
-description: %s
----
-`, a.Name, a.Version, a.Description)
+	frontmatter := fmt.Sprintf("---\nname: %s\nversion: %s\ndescription: %s\n",
+		a.Name, a.Version, a.Description)
+
+	// Add optional fields if present
+	if a.Class != "" {
+		frontmatter += fmt.Sprintf("class: %s\n", a.Class)
+	}
+	if a.Specialty != "" {
+		frontmatter += fmt.Sprintf("specialty: %s\n", a.Specialty)
+	}
+
+	frontmatter += "---\n"
 
 	return frontmatter + a.Content
 }
@@ -274,4 +286,64 @@ description: %s
 // FileName returns just the filename without path
 func (a *Agent) FileName() string {
 	return filepath.Base(a.FilePath)
+}
+
+// PhaseWeights represents the percentage distribution across the three phases
+type PhaseWeights struct {
+	Research int // Research/Analyze phase percentage
+	Execute  int // Build/Execute phase percentage
+	Validate int // Validate/Follow-up phase percentage
+}
+
+// GetPhaseWeights returns the phase weight distribution for an agent based on its class
+// Returns default weights if class is not recognized
+func (a *Agent) GetPhaseWeights() PhaseWeights {
+	return GetPhaseWeightsByClass(a.Class)
+}
+
+// GetPhaseWeightsByClass returns phase weights for a given class
+func GetPhaseWeightsByClass(class string) PhaseWeights {
+	weights := map[string]PhaseWeights{
+		"workflow-specialist": {
+			Research: 15,
+			Execute:  70,
+			Validate: 15,
+		},
+		"technology-implementer": {
+			Research: 30,
+			Execute:  55,
+			Validate: 15,
+		},
+		"strategic-planner": {
+			Research: 45,
+			Execute:  30,
+			Validate: 25,
+		},
+	}
+
+	if w, exists := weights[class]; exists {
+		return w
+	}
+
+	// Default to balanced weights if class not specified or not recognized
+	return PhaseWeights{
+		Research: 30,
+		Execute:  50,
+		Validate: 20,
+	}
+}
+
+// GetUserFriendlyClassName returns the user-friendly name for an agent class
+func GetUserFriendlyClassName(class string) string {
+	names := map[string]string{
+		"workflow-specialist":      "Task Automator",
+		"technology-implementer":   "Feature Builder",
+		"strategic-planner":        "System Architect",
+	}
+
+	if name, exists := names[class]; exists {
+		return name
+	}
+
+	return "Agent" // Default fallback
 }
