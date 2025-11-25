@@ -4,7 +4,7 @@ set -e
 # CAMI Installation Script
 # This script installs CAMI and creates the user workspace
 
-VERSION="0.3.0"
+VERSION="0.4.0"
 INSTALL_DIR="${CAMI_DIR:-$HOME/cami-workspace}"
 BIN_DIR="${BIN_DIR:-/usr/local/bin}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -120,25 +120,63 @@ mkdir -p "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR/sources/my-agents"
 mkdir -p "$INSTALL_DIR/.claude/agents"
 
-# Copy template files
+# Backup function for upgrades
+backup_if_exists() {
+    local file="$1"
+    if [ -f "$file" ]; then
+        local backup_dir="$INSTALL_DIR/.cami-backup-$(date +%Y%m%d-%H%M%S)"
+        mkdir -p "$backup_dir"
+        cp "$file" "$backup_dir/"
+        echo "$backup_dir"
+    fi
+}
+
+# Check if this is an upgrade
+IS_UPGRADE=false
+if [ -f "$INSTALL_DIR/CLAUDE.md" ]; then
+    IS_UPGRADE=true
+fi
+
+# Copy template files (always update these)
 print_info "Installing template files..."
+
+if [ "$IS_UPGRADE" = true ]; then
+    # Create a single backup directory for this upgrade
+    BACKUP_DIR="$INSTALL_DIR/.cami-backup-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$BACKUP_DIR"
+
+    # Backup user-modifiable files
+    [ -f "$INSTALL_DIR/CLAUDE.md" ] && cp "$INSTALL_DIR/CLAUDE.md" "$BACKUP_DIR/"
+    [ -f "$INSTALL_DIR/.claude/agents/agent-architect.md" ] && cp "$INSTALL_DIR/.claude/agents/agent-architect.md" "$BACKUP_DIR/"
+
+    print_info "Backed up existing files to $BACKUP_DIR"
+fi
+
 cp "$TEMPLATE_DIR/CLAUDE.md" "$INSTALL_DIR/"
 cp "$TEMPLATE_DIR/README.md" "$INSTALL_DIR/"
 cp "$TEMPLATE_DIR/.gitignore" "$INSTALL_DIR/"
 cp "$TEMPLATE_DIR/.mcp.json" "$INSTALL_DIR/"
 
 # Deploy agent-architect (the only bundled agent)
-print_info "Deploying agent-architect..."
+print_info "Deploying agent-architect v4.0.0..."
 cp "$TEMPLATE_DIR/agent-architect.md" "$INSTALL_DIR/.claude/agents/"
 
-# Copy templates to my-agents source
+# Copy templates to my-agents source (only if they don't exist)
 if [ ! -f "$INSTALL_DIR/sources/my-agents/.camiignore" ]; then
     cp "$TEMPLATE_DIR/.camiignore" "$INSTALL_DIR/sources/my-agents/"
 fi
 
+# STRATEGIES.yaml - update if it's still the default template
 if [ ! -f "$INSTALL_DIR/sources/my-agents/STRATEGIES.yaml" ]; then
     cp "$TEMPLATE_DIR/sources/my-agents/STRATEGIES.yaml" "$INSTALL_DIR/sources/my-agents/"
     print_success "Installed STRATEGIES.yaml template"
+elif grep -q "^# CAMI Agent Strategies" "$INSTALL_DIR/sources/my-agents/STRATEGIES.yaml" 2>/dev/null; then
+    # It's a CAMI template file, safe to update
+    if [ "$IS_UPGRADE" = true ]; then
+        cp "$INSTALL_DIR/sources/my-agents/STRATEGIES.yaml" "$BACKUP_DIR/" 2>/dev/null || true
+    fi
+    cp "$TEMPLATE_DIR/sources/my-agents/STRATEGIES.yaml" "$INSTALL_DIR/sources/my-agents/"
+    print_success "Updated STRATEGIES.yaml template"
 fi
 
 # Create initial config if it doesn't exist
