@@ -23,7 +23,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const version = "0.3.0"
+const version = "0.4.0"
 
 // MCP server constants
 const (
