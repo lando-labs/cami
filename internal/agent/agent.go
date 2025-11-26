@@ -336,9 +336,9 @@ func GetPhaseWeightsByClass(class string) PhaseWeights {
 // GetUserFriendlyClassName returns the user-friendly name for an agent class
 func GetUserFriendlyClassName(class string) string {
 	names := map[string]string{
-		"workflow-specialist":      "Task Automator",
-		"technology-implementer":   "Feature Builder",
-		"strategic-planner":        "System Architect",
+		"workflow-specialist":    "Task Automator",
+		"technology-implementer": "Feature Builder",
+		"strategic-planner":      "System Architect",
 	}
 
 	if name, exists := names[class]; exists {

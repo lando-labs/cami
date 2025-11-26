@@ -95,11 +95,11 @@ type ProjectNormalizationOptions struct {
 
 // ProjectNormalizationResult represents the outcome
 type ProjectNormalizationResult struct {
-	Success      bool
-	StateBefore  manifest.ProjectState
-	StateAfter   manifest.ProjectState
-	Changes      []string
-	BackupPath   string
+	Success       bool
+	StateBefore   manifest.ProjectState
+	StateAfter    manifest.ProjectState
+	Changes       []string
+	BackupPath    string
 	UndoAvailable bool
 }
 

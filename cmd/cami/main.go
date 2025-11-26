@@ -332,14 +332,14 @@ type UpdateSourceArgs struct {
 }
 
 type SourceInfo struct {
-	Name         string `json:"name"`
-	Path         string `json:"path"`
-	Priority     int    `json:"priority"`
-	AgentCount   int    `json:"agent_count"`
-	GitRemote    string `json:"git_remote,omitempty"`
-	GitEnabled   bool   `json:"git_enabled"`
-	IsCompliant  bool   `json:"is_compliant"`
-	IssueCount   int    `json:"issue_count,omitempty"`
+	Name          string `json:"name"`
+	Path          string `json:"path"`
+	Priority      int    `json:"priority"`
+	AgentCount    int    `json:"agent_count"`
+	GitRemote     string `json:"git_remote,omitempty"`
+	GitEnabled    bool   `json:"git_enabled"`
+	IsCompliant   bool   `json:"is_compliant"`
+	IssueCount    int    `json:"issue_count,omitempty"`
 	IssuesSummary string `json:"issues_summary,omitempty"`
 }
 
@@ -362,15 +362,15 @@ type CreateProjectResponse struct {
 }
 
 type OnboardingState struct {
-	ConfigExists              bool   `json:"config_exists"`
-	IsFreshInstall            bool   `json:"is_fresh_install"`
-	SourceCount               int    `json:"source_count"`
-	LocationCount             int    `json:"location_count"`
-	HasAgentArch              bool   `json:"has_agent_architect"`
-	TotalAgents               int    `json:"total_agents"`
-	DeployedAgents            int    `json:"deployed_agents"`              // In current directory
-	TotalDeployedAcrossAll    int    `json:"total_deployed_across_all"`    // Across all tracked locations
-	RecommendedNext           string `json:"recommended_next"`
+	ConfigExists           bool   `json:"config_exists"`
+	IsFreshInstall         bool   `json:"is_fresh_install"`
+	SourceCount            int    `json:"source_count"`
+	LocationCount          int    `json:"location_count"`
+	HasAgentArch           bool   `json:"has_agent_architect"`
+	TotalAgents            int    `json:"total_agents"`
+	DeployedAgents         int    `json:"deployed_agents"`           // In current directory
+	TotalDeployedAcrossAll int    `json:"total_deployed_across_all"` // Across all tracked locations
+	RecommendedNext        string `json:"recommended_next"`
 }
 
 type OnboardResponse struct {

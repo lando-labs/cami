@@ -46,7 +46,9 @@
       "Bash(git log:*)",
       "mcp__git-all__git_status",
       "mcp__git-all__git_diff",
-      "mcp__git-all__git_log"
+      "mcp__git-all__git_log",
+      "Bash(gh run:*)",
+      "Bash(gofmt:*)"
     ],
     "deny": [],
     "ask": []

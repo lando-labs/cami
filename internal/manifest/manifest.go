@@ -27,20 +27,20 @@ const (
 type DeployedAgent struct {
 	Name           string    `yaml:"name"`
 	Version        string    `yaml:"version"`
-	Source         string    `yaml:"source"`                   // Source name
-	SourcePath     string    `yaml:"source_path"`              // Full path to source file
+	Source         string    `yaml:"source"`      // Source name
+	SourcePath     string    `yaml:"source_path"` // Full path to source file
 	Priority       int       `yaml:"priority"`
 	DeployedAt     time.Time `yaml:"deployed_at"`
-	ContentHash    string    `yaml:"content_hash"`             // SHA256 of normalized content
-	MetadataHash   string    `yaml:"metadata_hash"`            // SHA256 of frontmatter only
-	CustomOverride bool      `yaml:"custom_override"`          // Intentionally customized
-	NeedsUpgrade   bool      `yaml:"needs_upgrade,omitempty"`  // Missing version, etc.
-	Origin         string    `yaml:"origin,omitempty"`         // "cami", "external", "manual"
+	ContentHash    string    `yaml:"content_hash"`            // SHA256 of normalized content
+	MetadataHash   string    `yaml:"metadata_hash"`           // SHA256 of frontmatter only
+	CustomOverride bool      `yaml:"custom_override"`         // Intentionally customized
+	NeedsUpgrade   bool      `yaml:"needs_upgrade,omitempty"` // Missing version, etc.
+	Origin         string    `yaml:"origin,omitempty"`        // "cami", "external", "manual"
 }
 
 // ProjectManifest represents a project's deployment manifest (local)
 type ProjectManifest struct {
-	Version      string          `yaml:"version"`        // Schema version
+	Version      string          `yaml:"version"` // Schema version
 	State        ProjectState    `yaml:"state"`
 	NormalizedAt time.Time       `yaml:"normalized_at"`
 	Agents       []DeployedAgent `yaml:"agents"`
