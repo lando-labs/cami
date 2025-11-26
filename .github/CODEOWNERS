@@ -1,0 +1,21 @@
+# CODEOWNERS - defines who is responsible for code review
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+* @lando
+
+# Core Go code
+/cmd/ @lando
+/internal/ @lando
+
+# Installation and templates
+/install/ @lando
+
+# Bundled agents
+/.claude/agents/ @lando
+
+# Documentation
+*.md @lando
+
+# GitHub configuration
+/.github/ @lando
