@@ -2,20 +2,20 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default owner for everything in the repo
-* @lando
+* @lando-landolabs
 
 # Core Go code
-/cmd/ @lando
-/internal/ @lando
+/cmd/ @lando-landolabs
+/internal/ @lando-landolabs
 
 # Installation and templates
-/install/ @lando
+/install/ @lando-landolabs
 
 # Bundled agents
-/.claude/agents/ @lando
+/.claude/agents/ @lando-landolabs
 
 # Documentation
-*.md @lando
+*.md @lando-landolabs
 
 # GitHub configuration
-/.github/ @lando
+/.github/ @lando-landolabs
