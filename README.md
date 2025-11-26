@@ -397,33 +397,41 @@ claude
 
 ## Version
 
-**CAMI v0.3.0** - Current Release
+**CAMI v0.4.0** - Current Release
 
-### What's New in v0.3.0
-- ✅ Single binary with dual modes (MCP + CLI)
-- ✅ 19 MCP tools for complete agent lifecycle management
-- ✅ Deployment tracking with automatic manifest creation
-- ✅ Normalization system (Phase 1 complete)
-- ✅ Project creation workflow with `create_project` tool
-- ✅ Global agent storage at `~/cami-workspace/sources/`
-- ✅ Priority-based multi-source deduplication (1 = highest, 100 = lowest)
-- ✅ Source compliance checking and normalization
-- ✅ .camiignore support with glob patterns
-- ✅ STRATEGIES.yaml for agent behavioral guidance
+### What's New in v0.4.0
+- ✅ **Agent Classification System** - Three-class agent taxonomy:
+  - **Workflow Specialist** (Task Automator) - 15/70/15 phase weights, uses `haiku`
+  - **Technology Implementer** (Feature Builder) - 30/55/15 phase weights, uses `sonnet`
+  - **Strategic Planner** (System Architect) - 45/30/25 phase weights, uses `opus`
+- ✅ **agent-architect v4.0.0** - Auto-classification, model selection, STRATEGIES.yaml integration
+- ✅ **Enhanced Onboarding** - Improved `onboard` tool with agent-architect status and deployment counts
+- ✅ **Installer Upgrades** - Smart upgrade support with automatic backups
+- ✅ **STRATEGIES.yaml Documentation Location** - Configure where agents write documentation
+
+### Previous Release (v0.3.0)
+- Single binary with dual modes (MCP + CLI)
+- 19 MCP tools for complete agent lifecycle management
+- Deployment tracking with automatic manifest creation
+- Normalization system (Phase 1 complete)
+- Project creation workflow with `create_project` tool
+- Global agent storage at `~/cami-workspace/sources/`
+- Priority-based multi-source deduplication (1 = highest, 100 = lowest)
+- Source compliance checking and normalization
+- .camiignore support with glob patterns
+- STRATEGIES.yaml for agent behavioral guidance
 
 ### Current Status
 
-**Alpha Testing** - v0.3.0-alpha.3
-- Core functionality complete and tested
-- Normalization system operational
+**Alpha Testing** - v0.4.0
+- Agent classification system complete and tested
 - Ready for early adopter testing
 - Homebrew tap coming soon
 
 ### Roadmap
 
-**v0.4.0 (Planned)**
+**v0.5.0 (Planned)**
 - Official agent library (lando-agents)
-- Agent classification system
 - Remote agent sources (HTTP, direct Git URLs)
 - Enhanced update detection
 - Team collaboration features

@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const version = "0.1.0"
+const version = "0.4.0"
 
 // NewRootCommand creates the root command with all subcommands
 func NewRootCommand(vcAgentsDir string) *cobra.Command {

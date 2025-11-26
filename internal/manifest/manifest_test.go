@@ -128,8 +128,8 @@ func TestCentralManifestReadWrite(t *testing.T) {
 		err := WriteCentralManifest(manifest)
 		require.NoError(t, err)
 
-		// Verify cami directory was created
-		camiDir := filepath.Join(tmpDir, "cami")
+		// Verify cami-workspace directory was created
+		camiDir := filepath.Join(tmpDir, "cami-workspace")
 		assert.DirExists(t, camiDir)
 
 		// Verify manifest file exists

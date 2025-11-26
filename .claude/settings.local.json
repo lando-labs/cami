@@ -42,7 +42,11 @@
       "Bash(go build:*)",
       "Bash(make build:*)",
       "Bash(git rm:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(git log:*)",
+      "mcp__git-all__git_status",
+      "mcp__git-all__git_diff",
+      "mcp__git-all__git_log"
     ],
     "deny": [],
     "ask": []

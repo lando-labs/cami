@@ -28,7 +28,7 @@ const version = "0.4.0"
 // MCP server constants
 const (
 	serverName    = "cami"
-	serverVersion = "0.3.0"
+	serverVersion = "0.4.0"
 )
 
 // ========== CLI FUNCTIONS ==========
@@ -362,14 +362,15 @@ type CreateProjectResponse struct {
 }
 
 type OnboardingState struct {
-	ConfigExists    bool   `json:"config_exists"`
-	IsFreshInstall  bool   `json:"is_fresh_install"`
-	SourceCount     int    `json:"source_count"`
-	LocationCount   int    `json:"location_count"`
-	HasAgentArch    bool   `json:"has_agent_architect"`
-	TotalAgents     int    `json:"total_agents"`
-	DeployedAgents  int    `json:"deployed_agents"`
-	RecommendedNext string `json:"recommended_next"`
+	ConfigExists              bool   `json:"config_exists"`
+	IsFreshInstall            bool   `json:"is_fresh_install"`
+	SourceCount               int    `json:"source_count"`
+	LocationCount             int    `json:"location_count"`
+	HasAgentArch              bool   `json:"has_agent_architect"`
+	TotalAgents               int    `json:"total_agents"`
+	DeployedAgents            int    `json:"deployed_agents"`              // In current directory
+	TotalDeployedAcrossAll    int    `json:"total_deployed_across_all"`    // Across all tracked locations
+	RecommendedNext           string `json:"recommended_next"`
 }
 
 type OnboardResponse struct {
@@ -1343,13 +1344,32 @@ func registerMCPTools(server *mcp.Server) {
 			state.TotalAgents = len(allAgents)
 		}
 
-		// Try to count deployed agents in current directory
+		// Check if agent-architect exists in CAMI workspace
+		configDir, _ := config.GetConfigDir()
+		agentArchPath := filepath.Join(configDir, ".claude", "agents", "agent-architect.md")
+		if _, err := os.Stat(agentArchPath); err == nil {
+			state.HasAgentArch = true
+		}
+
+		// Count deployed agents in current directory
 		wd, _ := os.Getwd()
 		deployedAgentsPath := filepath.Join(wd, ".claude", "agents")
 		if files, err := os.ReadDir(deployedAgentsPath); err == nil {
 			for _, file := range files {
 				if !file.IsDir() && filepath.Ext(file.Name()) == ".md" {
 					state.DeployedAgents++
+				}
+			}
+		}
+
+		// Also count total deployed agents across all tracked locations
+		for _, loc := range cfg.Locations {
+			locAgentsPath := filepath.Join(loc.Path, ".claude", "agents")
+			if files, err := os.ReadDir(locAgentsPath); err == nil {
+				for _, file := range files {
+					if !file.IsDir() && filepath.Ext(file.Name()) == ".md" {
+						state.TotalDeployedAcrossAll++
+					}
 				}
 			}
 		}
@@ -1398,8 +1418,7 @@ func registerMCPTools(server *mcp.Server) {
 		// Not fresh install - standard status
 		responseText = "# CAMI Setup Status\n\n"
 
-		// Show workspace locations
-		configDir, _ := config.GetConfigDir()
+		// Show workspace locations (configDir already set above)
 		responseText += "## Your CAMI Setup\n\n"
 		responseText += fmt.Sprintf("**CAMI Workspace**: `%s/`\n", configDir)
 		responseText += "  → Where agent sources and config live\n\n"
@@ -1410,8 +1429,11 @@ func registerMCPTools(server *mcp.Server) {
 		}
 
 		if len(cfg.Locations) > 0 {
-			responseText += fmt.Sprintf("**Tracked Projects**: %d\n", len(cfg.Locations))
-			responseText += "  → Projects CAMI knows about\n\n"
+			responseText += fmt.Sprintf("**Tracked Projects**: %d", len(cfg.Locations))
+			if state.TotalDeployedAcrossAll > 0 {
+				responseText += fmt.Sprintf(" (%d agents deployed total)", state.TotalDeployedAcrossAll)
+			}
+			responseText += "\n  → Projects CAMI knows about\n\n"
 		}
 
 		responseText += "---\n\n"
@@ -1435,6 +1457,16 @@ func registerMCPTools(server *mcp.Server) {
 			responseText += fmt.Sprintf("You have access to %d agents.\n\n", state.TotalAgents)
 			responseText += "- Use `mcp__cami__list_agents` to see all available agents\n"
 			responseText += "- Use `mcp__cami__deploy_agents` to add agents to projects\n\n"
+		}
+
+		// Show agent-architect status
+		responseText += "## Agent Creation\n"
+		if state.HasAgentArch {
+			responseText += "✓ **agent-architect** is available\n"
+			responseText += "  → Use it to create custom agents: 'Create a new agent for [task]'\n\n"
+		} else {
+			responseText += "⚠️ **agent-architect** not found in CAMI workspace\n"
+			responseText += "  → Deploy it to create custom agents\n\n"
 		}
 
 		if state.DeployedAgents > 0 {
