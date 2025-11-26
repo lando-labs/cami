@@ -36,7 +36,7 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at:
 
-**Email**: [conduct@lando-labs.com](mailto:conduct@lando-labs.com)
+**Email**: [feedback@landolabs.co](mailto:feedback@landolabs.co)
 
 All complaints will be reviewed and investigated promptly and fairly.
 

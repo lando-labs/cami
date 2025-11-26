@@ -17,7 +17,7 @@ We take security seriously. If you discover a security vulnerability in CAMI, pl
 
 Instead, please report security vulnerabilities by emailing:
 
-**security@lando-labs.com**
+**feedback@landolabs.co**
 
 Include the following information:
 - Type of vulnerability
