@@ -124,6 +124,25 @@ agent_sources:
 
 **Example**: If "frontend" agent exists in all three sources, the version from `my-agents` (priority 10) is used.
 
+### Example Agent Guilds
+
+Ready-to-use agent collections you can add to CAMI:
+
+| Guild | Focus | Agents | Repository |
+|-------|-------|--------|------------|
+| game-dev-guild | Phaser 3 games | 8 | [lando-labs/game-dev-guild](https://github.com/lando-labs/game-dev-guild) |
+| content-guild | Writing & marketing | 6 | [lando-labs/content-guild](https://github.com/lando-labs/content-guild) |
+| fullstack-guild | MERN stack | 7 | [lando-labs/fullstack-guild](https://github.com/lando-labs/fullstack-guild) |
+
+Add a guild to CAMI:
+```bash
+# Via Claude Code
+"Add the game-dev-guild agent source"
+
+# Via CLI
+cami source add https://github.com/lando-labs/game-dev-guild.git
+```
+
 ## MCP Tools
 
 CAMI provides 19 MCP tools for Claude Code:
@@ -426,15 +445,16 @@ claude
 **Alpha Testing** - v0.4.0
 - Agent classification system complete and tested
 - Ready for early adopter testing
+- Official agent guilds available (game-dev, content, fullstack)
 - Homebrew tap coming soon
 
 ### Roadmap
 
 **v0.5.0 (Planned)**
-- Official agent library (lando-agents)
 - Remote agent sources (HTTP, direct Git URLs)
 - Enhanced update detection
 - Team collaboration features
+- Skills support (Claude Code skills integration)
 
 ## License
 
