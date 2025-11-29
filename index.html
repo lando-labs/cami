@@ -620,7 +620,6 @@
             height: 8px;
             background-color: #4ADE80;
             border-radius: 50%;
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         @keyframes pulse {
@@ -717,7 +716,8 @@
                 <a href="#features">Features</a>
                 <a href="#how-it-works">How It Works</a>
                 <a href="#agent-architect">Agent Architect</a>
-                <a href="#testimonials">Testimonials</a>
+                <a href="https://cami.landolabs.co" target="_blank">Docs</a>
+                <a href="https://github.com/lando-labs/cami" target="_blank">GitHub</a>
             </nav>
         </div>
     </header>
@@ -726,7 +726,7 @@
     <section class="hero">
         <div class="container hero-content">
             <img src="cami-logo.png" alt="CAMI Logo" class="hero-logo">
-            <div class="coming-soon-badge">Coming Soon</div>
+            <div class="coming-soon-badge">Now Available</div>
             <h1>Your AI Agent Guild Headquarters</h1>
             <p class="hero-subtitle">Create specialized Claude Code agents from requirements, organize them in a clean workspace, and share them across your team. CAMI handles everything through natural language.</p>
 
@@ -742,6 +742,21 @@ CAMI: ✓ Created project at ~/projects/meditation-app
       ✓ Deployed 5 specialized agents
       ✓ Generated CLAUDE.md with project vision
       Ready to build!</code></pre>
+            </div>
+
+            <div class="cta-buttons">
+                <a href="https://github.com/lando-labs/cami#quick-start" class="btn btn-primary btn-lg">
+                    <svg class="icon" viewBox="0 0 24 24" width="20" height="20">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Get Started
+                </a>
+                <a href="https://github.com/lando-labs/cami" class="btn btn-secondary btn-lg">
+                    <svg class="icon" viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                    </svg>
+                    View on GitHub
+                </a>
             </div>
         </div>
     </section>
@@ -917,10 +932,11 @@ CAMI: ✓ Deployed frontend (v1.1.0)
                     <h3 class="feature-title">Install & Initialize</h3>
                     <p class="feature-description">Download and run the installer. Creates ~/cami-workspace/ workspace with clean directory structure. Binary goes on your PATH for global access.</p>
                     <div class="code-block mt-8">
-                        <pre><code>$ make install
+                        <pre><code>$ curl -fsSL https://raw.githubusercontent.com/lando-labs/cami/main/install/install.sh | bash
 
 ✓ Created ~/cami-workspace/ workspace
 ✓ Installed to /usr/local/bin/cami
+✓ Deployed agent-architect
 Ready to use!</code></pre>
                     </div>
                 </div>
@@ -1069,7 +1085,7 @@ Good tests make code fearlessly maintainable.
             <!-- Call to Action -->
             <div style="text-align: center; margin-top: 3rem;">
                 <p style="font-size: var(--font-size-lg); color: var(--color-neutral-700);">
-                    Agent-architect will ship with CAMI and deploy automatically to <code>~/cami-workspace/.claude/agents/</code>
+                    Agent-architect ships with CAMI and deploys automatically to <code>~/cami-workspace/.claude/agents/</code>
                 </p>
             </div>
         </div>
@@ -1127,7 +1143,7 @@ Good tests make code fearlessly maintainable.
     <footer class="footer">
         <div class="container">
             <div class="footer-bottom">
-                <p>Built by Lando Labs for <a href="https://claude.ai/download" target="_blank">Claude Code</a> | Coming Soon</p>
+                <p>Built by Lando Labs for <a href="https://claude.ai/download" target="_blank">Claude Code</a> | <a href="https://cami.landolabs.co" target="_blank">Documentation</a> | <a href="https://github.com/lando-labs/cami" target="_blank">GitHub</a></p>
             </div>
         </div>
     </footer>
