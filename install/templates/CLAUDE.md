@@ -43,6 +43,22 @@ CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynami
 - **Deployment**: Copy agents from sources to specific projects' `.claude/agents/` directories
 - **.camiignore**: Each source directory can have a `.camiignore` file (like `.gitignore`) to exclude files from agent loading
 
+## Official Agent Guilds
+
+Lando Labs maintains official agent guilds you can add to CAMI. When a user asks to add one of these by name, use the `add_source` tool with the corresponding URL:
+
+| Guild | Focus | URL |
+|-------|-------|-----|
+| `game-dev-guild` | Phaser 3 game development | `https://github.com/lando-labs/game-dev-guild.git` |
+| `content-guild` | Writing & marketing | `https://github.com/lando-labs/content-guild.git` |
+| `fullstack-guild` | MERN stack development | `https://github.com/lando-labs/fullstack-guild.git` |
+
+**Example:**
+```
+User: "Add the content-guild"
+You: *uses add_source with url="https://github.com/lando-labs/content-guild.git"*
+```
+
 ## Directory Structure
 
 ```
