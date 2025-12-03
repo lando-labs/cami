@@ -64,9 +64,9 @@ CAMI creates a user workspace at `~/cami-workspace/` during installation:
 ├── .claude/
 │   └── agents/                  # CAMI's own agents
 ├── sources/                     # Agent sources
-│   ├── official-agents/        # (if added)
+│   ├── my-agents/              # User's custom agents
 │   ├── team-agents/            # (if added)
-│   └── my-agents/              # User's custom agents
+│   └── fullstack-guild/        # Example: guild added via add_source
 
 /usr/local/bin/cami             # Binary (on PATH)
 ```
@@ -314,9 +314,9 @@ Claude: *uses mcp__cami__update_claude_md*
 User: "Show me my agent sources"
 Claude: *uses mcp__cami__list_sources*
 "You have 2 agent sources:
- • ✓ lando-agents (priority 100) - 29 agents
-   Path: ~/cami-workspace/sources/lando-agents
-   Git: git@github.com:lando-labs/lando-agents.git (clean)
+ • ✓ fullstack-guild (priority 100) - 7 agents
+   Path: ~/cami-workspace/sources/fullstack-guild
+   Git: https://github.com/lando-labs/fullstack-guild.git (clean)
    Compliance: ✓ Compliant
 
  • ⚠️ team-agents (priority 50) - 15 agents
@@ -343,21 +343,14 @@ Claude: *uses mcp__cami__list_sources*
 
 **Example context**:
 ```
-User: "Add the official Lando agent library"
-Claude: *uses mcp__cami__add_source with git@github.com:lando-labs/lando-agents.git*
-"✓ Cloned lando-agents to ~/cami-workspace/sources/lando-agents
- ✓ Found 29 agents
+User: "Add the fullstack-guild"
+Claude: *uses mcp__cami__add_source with url="https://github.com/lando-labs/fullstack-guild.git"*
+"✓ Cloned fullstack-guild to ~/cami-workspace/sources/fullstack-guild
+ ✓ Found 7 agents
 
  ## Source Compliance Check
 
- ⚠️ **This source has compliance issues:**
-
- - Missing .camiignore file
- - 3 agents with issues:
-   - frontend.md: missing version
-   - backend.md: missing version, missing description
-
- **Recommendation:** Use `normalize_source` to fix these issues automatically."
+ ✓ **Source is compliant**"
 ```
 
 #### 7. `mcp__cami__update_source`
@@ -375,7 +368,7 @@ Claude: *uses mcp__cami__add_source with git@github.com:lando-labs/lando-agents.
 ```
 User: "Update my agents"
 Claude: *uses mcp__cami__update_source*
-"✓ Updated lando-agents (3 new commits)
+"✓ Updated fullstack-guild (3 new commits)
  ⊘ Skipped my-agents (no git remote)"
 ```
 
@@ -391,7 +384,7 @@ Claude: *uses mcp__cami__update_source*
 ```
 User: "Check my agent sources"
 Claude: *uses mcp__cami__source_status*
-"lando-agents: Clean (on main, up to date with remote)
+"fullstack-guild: Clean (on main, up to date with remote)
  my-agents: Modified (2 uncommitted changes)"
 ```
 
@@ -467,9 +460,11 @@ Claude: *uses mcp__cami__remove_location*
 User: "Help me get started with CAMI"
 Claude: *uses mcp__cami__onboard*
 "I see CAMI isn't configured yet. Let me help you set it up.
- I'll add the official Lando agent library with 29 professional agents."
+ What kind of development do you primarily do?"
+User: "Full stack web apps"
+Claude: "I recommend the fullstack-guild - it has agents for React, Express, MongoDB, and more."
 *uses mcp__cami__add_source*
-"✓ Added lando-agents (29 agents available)
+"✓ Added fullstack-guild (7 agents available)
  Which agents would you like to add to your project?"
 ```
 
@@ -755,11 +750,12 @@ User: "I want to start using CAMI"
 
 Claude workflow:
 1. Use mcp__cami__onboard → Detect no config
-2. Use mcp__cami__add_source → Clone lando-agents
-3. Use mcp__cami__list_agents → Show available agents
-4. Ask user which agents they want
-5. Use mcp__cami__deploy_agents → Deploy selected agents
-6. Use mcp__cami__update_claude_md → Document deployment
+2. Ask user about development focus
+3. Use mcp__cami__add_source → Clone appropriate guild (fullstack-guild, content-guild, or game-dev-guild)
+4. Use mcp__cami__list_agents → Show available agents
+5. Ask user which agents they want
+6. Use mcp__cami__deploy_agents → Deploy selected agents
+7. Use mcp__cami__update_claude_md → Document deployment
 ```
 
 ### Adding Agents to Current Project
@@ -847,11 +843,11 @@ When the same agent exists in multiple sources, CAMI uses priority-based dedupli
 
 ```yaml
 agent_sources:
-  - name: official-agents
-    priority: 100        # Official agents (lowest priority)
+  - name: fullstack-guild
+    priority: 100        # Public guilds (lowest priority)
 
-  - name: company-agents
-    priority: 50         # Company-specific (medium priority)
+  - name: team-agents
+    priority: 50         # Team-specific (medium priority)
 
   - name: my-agents
     priority: 10         # Personal overrides (highest priority)

@@ -46,9 +46,9 @@ CAMI will guide you through adding agent sources and configuring your setup.
 ├── .claude/
 │   └── agents/                  # CAMI's own agents (qa, agent-architect, etc.)
 ├── sources/                     # Agent sources
-│   ├── official-agents/        # Official agent library (if added)
+│   ├── my-agents/              # Your custom agents
 │   ├── team-agents/            # Team agents (if added)
-│   └── my-agents/              # Your custom agents
+│   └── fullstack-guild/        # Example: guild added via add_source
 └── README.md                    # This file
 ```
 
@@ -82,8 +82,20 @@ Agents are organized in `sources/` directory:
 
 - **my-agents/** - Your custom agents (tracked in git if you initialize this directory)
   - Includes a `.camiignore` file to exclude non-agent files from loading
-- **official-agents/** - Official agent library (pulled from remote)
+- **[guild-name]/** - Agent guilds added via `add_source` (e.g., fullstack-guild, content-guild)
 - **team-agents/** - Your team's shared agents (pulled from remote)
+
+### Official Agent Guilds
+
+Lando Labs maintains public agent guilds you can add:
+
+| Guild | Focus |
+|-------|-------|
+| `fullstack-guild` | MERN stack web development |
+| `content-guild` | Writing & marketing |
+| `game-dev-guild` | Phaser 3 game development |
+
+Add a guild: `"Add the fullstack-guild"`
 
 ### Adding Agent Sources
 
@@ -107,7 +119,7 @@ When the same agent exists in multiple sources, **lower priority number wins**:
 - Priority 50 = Default (standard sources)
 - Priority 100 = Lowest (fallback defaults)
 
-Example: If "frontend" agent exists in both `my-agents` (priority 10) and `official-agents` (priority 100), the version from `my-agents` is used.
+Example: If "frontend" agent exists in both `my-agents` (priority 10) and `fullstack-guild` (priority 100), the version from `my-agents` is used.
 
 ### Excluding Files with .camiignore
 
