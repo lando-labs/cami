@@ -43,7 +43,7 @@ func NewSourceAddCommand() *cobra.Command {
 		Short: "Add a new agent source",
 		Long: `Add a new agent source by cloning a Git repository.
 
-The repository will be cloned to vc-agents/<name>/ and added to your configuration.
+The repository will be cloned to sources/<name>/ and added to your configuration.
 
 Examples:
   cami source add git@github.com:company/agents.git
@@ -130,7 +130,7 @@ func NewSourceRemoveCommand() *cobra.Command {
 		Long: `Remove an agent source from configuration.
 
 Note: This only removes the source from configuration, it does not delete
-the directory. Use 'rm -rf vc-agents/<name>' to delete the files.`,
+the directory. Use 'rm -rf sources/<name>' to delete the files.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return SourceRemoveCommand(args[0])
@@ -155,20 +155,20 @@ func SourceAddCommand(url, name string, priority int) error {
 		}
 	}
 
-	// Find vc-agents directory
-	vcAgentsDir, err := findVCAgentsDir()
+	// Find sources directory
+	sourcesDir, err := findSourcesDir()
 	if err != nil {
-		return fmt.Errorf("failed to find vc-agents directory: %w", err)
+		return fmt.Errorf("failed to find sources directory: %w", err)
 	}
 
-	targetPath := filepath.Join(vcAgentsDir, name)
+	targetPath := filepath.Join(sourcesDir, name)
 
 	// Check if directory already exists
 	if _, err := os.Stat(targetPath); err == nil {
 		return fmt.Errorf("directory already exists: %s", targetPath)
 	}
 
-	fmt.Printf("Cloning %s to vc-agents/%s...\n", url, name)
+	fmt.Printf("Cloning %s to sources/%s...\n", url, name)
 
 	// Clone repository
 	cmd := exec.Command("git", "clone", url, targetPath)
@@ -204,7 +204,7 @@ func SourceAddCommand(url, name string, priority int) error {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
-	fmt.Printf("\n✓ Cloned %s to vc-agents/%s\n", name, name)
+	fmt.Printf("\n✓ Cloned %s to sources/%s\n", name, name)
 	fmt.Printf("✓ Added source with priority %d\n", priority)
 	if agents != nil {
 		fmt.Printf("✓ Found %d agents\n", len(agents))
@@ -383,8 +383,8 @@ func SourceRemoveCommand(name string) error {
 
 	fmt.Printf("✓ Removed source %q from configuration\n", name)
 	fmt.Println()
-	fmt.Printf("Note: Directory vc-agents/%s still exists.\n", name)
-	fmt.Printf("Remove it manually with: rm -rf vc-agents/%s\n", name)
+	fmt.Printf("Note: Directory sources/%s still exists.\n", name)
+	fmt.Printf("Remove it manually with: rm -rf sources/%s\n", name)
 
 	return nil
 }
@@ -407,17 +407,17 @@ func deriveNameFromURL(url string) string {
 	return name
 }
 
-func findVCAgentsDir() (string, error) {
+func findSourcesDir() (string, error) {
 	// Try current directory first
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 
-	vcAgentsPath := filepath.Join(cwd, "vc-agents")
-	if _, err := os.Stat(vcAgentsPath); err == nil {
-		return vcAgentsPath, nil
+	sourcesPath := filepath.Join(cwd, "sources")
+	if _, err := os.Stat(sourcesPath); err == nil {
+		return sourcesPath, nil
 	}
 
-	return "", fmt.Errorf("vc-agents directory not found (run from CAMI directory or run 'cami init' first)")
+	return "", fmt.Errorf("sources directory not found (run from CAMI workspace or run 'cami init' first)")
 }

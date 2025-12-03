@@ -23,7 +23,7 @@ Invoke the @agent-architect agent with these instructions:
 **User Requirements**: $ARGUMENTS
 
 **Technical Requirements**:
-- Target Directory: /Users/lando/Development/cami/vc-agents
+- Target Directory: ~/cami-workspace/sources/my-agents
 - Starting Version: 1.0.0
 - Must follow CAMI agent architecture standards
 - Must include complete YAML frontmatter (name, version, description, tags, use_cases, color, model)
@@ -33,7 +33,7 @@ Invoke the @agent-architect agent with these instructions:
 - Include version numbers for technical specialists (e.g., React 19+, Node.js 18+)
 - Set appropriate model (opus for complex reasoning, sonnet for most agents)
 
-Please create a production-ready agent file and save it to the vc-agents directory."
+Please create a production-ready agent file and save it to the sources/my-agents directory."
 
 Wait for @agent-architect to complete the agent design and save the file.
 
@@ -54,7 +54,7 @@ After agent creation, verify:
   • Name: [agent-name]
   • Version: [version]
   • Description: [description]
-  • Location: /Users/lando/Development/cami/vc-agents/[agent-name].md
+  • Location: ~/cami-workspace/sources/my-agents/[agent-name].md
 
 🚀 To deploy this agent to a project, use the CAMI MCP tools:
 
@@ -83,7 +83,7 @@ If @agent-architect encounters issues:
 ## Quality Checklist
 
 Before presenting results, verify:
-- [ ] Agent file exists in vc-agents/
+- [ ] Agent file exists in sources/my-agents/
 - [ ] Agent has valid YAML frontmatter with all required fields
 - [ ] Agent includes PROACTIVELY language in description
 - [ ] Agent follows appropriate archetype template
