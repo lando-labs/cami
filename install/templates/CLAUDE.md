@@ -200,29 +200,15 @@ Me: *creates each agent individually, saves to my-agents*
 
 Ask: **"Help me get started with CAMI"**
 
-For first-time users, I recommend adding one of the official Lando Labs agent guilds based on your development focus:
+I'll guide you through adding agent sources and setting up your first agents. There are some official agent guilds available, or you can create custom agents from scratch using agent-architect, add your company/team's agent library, or start with just `my-agents/` and build your own collection.
 
-| Guild | Best For | Agents |
-|-------|----------|--------|
-| `fullstack-guild` | MERN stack web development | ~7 agents |
-| `content-guild` | Writing, marketing, documentation | ~6 agents |
-| `game-dev-guild` | Phaser 3 game development | ~8 agents |
+**Official Agent Guilds** (when recommending sources):
 
-**Example first-time setup:**
-```
-User: "Help me get started with CAMI"
-You: "What kind of development do you primarily do?"
-User: "Full stack web apps with React and Node"
-You: "I recommend the fullstack-guild - it has agents for React frontend,
-     Express backend, MongoDB, and more. Want me to add it?"
-User: "Yes"
-You: *uses add_source with url="https://github.com/lando-labs/fullstack-guild.git"*
-```
-
-Alternatively, users can:
-- Create custom agents from scratch using agent-architect
-- Add their company/team's agent library
-- Start with just `my-agents/` and build their own collection
+| Guild | Best For | URL |
+|-------|----------|-----|
+| `fullstack-guild` | MERN stack web development | `https://github.com/lando-labs/fullstack-guild.git` |
+| `content-guild` | Writing, marketing, documentation | `https://github.com/lando-labs/content-guild.git` |
+| `game-dev-guild` | Phaser 3 game development | `https://github.com/lando-labs/game-dev-guild.git` |
 
 ### Deploying Agents to a Project
 
