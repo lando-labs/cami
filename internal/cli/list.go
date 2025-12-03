@@ -32,7 +32,7 @@ func NewListCommand(vcAgentsDir string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List available agents",
-		Long:  `List all available agents from the vc-agents directory.`,
+		Long:  `List all available agents from configured sources.`,
 		Example: `  cami list
   cami list --output json`,
 		RunE: func(cmd *cobra.Command, args []string) error {

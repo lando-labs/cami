@@ -39,7 +39,7 @@ func InitCommand() error {
 
 	// Ask where to store agents
 	fmt.Println("? Where should we store your agents?")
-	fmt.Println("  1. ./vc-agents (default, in this directory)")
+	fmt.Println("  1. ./sources (default, in this directory)")
 	fmt.Println("  2. Specify custom path")
 	fmt.Print("\nChoice (1): ")
 
@@ -47,38 +47,38 @@ func InitCommand() error {
 	choice, _ := reader.ReadString('\n')
 	choice = strings.TrimSpace(choice)
 
-	var vcAgentsPath string
+	var sourcesPath string
 	if choice == "" || choice == "1" {
-		// Default: ./vc-agents
+		// Default: ./sources
 		cwd, err := os.Getwd()
 		if err != nil {
 			return fmt.Errorf("failed to get current directory: %w", err)
 		}
-		vcAgentsPath = filepath.Join(cwd, "vc-agents")
+		sourcesPath = filepath.Join(cwd, "sources")
 	} else if choice == "2" {
 		fmt.Print("Path: ")
 		path, _ := reader.ReadString('\n')
-		vcAgentsPath = strings.TrimSpace(path)
+		sourcesPath = strings.TrimSpace(path)
 
 		// Expand ~ to home directory
-		if strings.HasPrefix(vcAgentsPath, "~/") {
+		if strings.HasPrefix(sourcesPath, "~/") {
 			home, err := os.UserHomeDir()
 			if err != nil {
 				return fmt.Errorf("failed to get home directory: %w", err)
 			}
-			vcAgentsPath = filepath.Join(home, vcAgentsPath[2:])
+			sourcesPath = filepath.Join(home, sourcesPath[2:])
 		}
 	} else {
 		return fmt.Errorf("invalid choice: %s", choice)
 	}
 
-	// Create vc-agents structure
-	vcAgentsPath, err = filepath.Abs(vcAgentsPath)
+	// Create sources structure
+	sourcesPath, err = filepath.Abs(sourcesPath)
 	if err != nil {
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	myAgentsPath := filepath.Join(vcAgentsPath, "my-agents")
+	myAgentsPath := filepath.Join(sourcesPath, "my-agents")
 	if err := os.MkdirAll(myAgentsPath, 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}

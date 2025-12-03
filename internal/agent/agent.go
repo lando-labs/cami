@@ -140,7 +140,7 @@ func shouldIgnore(relPath string, patterns []string) bool {
 	return false
 }
 
-// LoadAgents reads all agents from the vc-agents directory (supports nested folders)
+// LoadAgents reads all agents from the sources directory (supports nested folders)
 func LoadAgents(vcAgentsDir string) ([]*Agent, error) {
 	var agents []*Agent
 
