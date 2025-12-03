@@ -101,9 +101,9 @@ $ cami scan ~/projects/my-app
 ├── .claude/
 │   └── agents/                  # CAMI's own agents
 ├── sources/                     # Agent sources
-│   ├── official-agents/        # (if added)
+│   ├── my-agents/              # Your custom agents
 │   ├── team-agents/            # (if added)
-│   └── my-agents/              # Your custom agents
+│   └── fullstack-guild/        # Example: guild added via add_source
 
 /usr/local/bin/cami             # Binary on PATH
 ```
@@ -118,8 +118,8 @@ agent_sources:
     priority: 10         # Highest priority (personal overrides)
   - name: team-agents
     priority: 50         # Medium priority (default)
-  - name: official-agents
-    priority: 100        # Lowest priority (public agents)
+  - name: fullstack-guild
+    priority: 100        # Lowest priority (public guilds)
 ```
 
 **Example**: If "frontend" agent exists in all three sources, the version from `my-agents` (priority 10) is used.

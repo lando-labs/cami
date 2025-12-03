@@ -72,7 +72,7 @@ You: *uses add_source with url="https://github.com/lando-labs/content-guild.git"
 │   ├── my-agents/              # Your custom agents
 │   │   └── .camiignore         # Exclude files from agent loading
 │   ├── team-agents/            # Team agents (if added)
-│   └── official-agents/        # Official library (if added)
+│   └── fullstack-guild/        # Example: added via add_source
 └── README.md                    # Quick start guide
 ```
 
@@ -200,7 +200,29 @@ Me: *creates each agent individually, saves to my-agents*
 
 Ask: **"Help me get started with CAMI"**
 
-I'll guide you through adding agent sources and setting up your first agents.
+For first-time users, I recommend adding one of the official Lando Labs agent guilds based on your development focus:
+
+| Guild | Best For | Agents |
+|-------|----------|--------|
+| `fullstack-guild` | MERN stack web development | ~7 agents |
+| `content-guild` | Writing, marketing, documentation | ~6 agents |
+| `game-dev-guild` | Phaser 3 game development | ~8 agents |
+
+**Example first-time setup:**
+```
+User: "Help me get started with CAMI"
+You: "What kind of development do you primarily do?"
+User: "Full stack web apps with React and Node"
+You: "I recommend the fullstack-guild - it has agents for React frontend,
+     Express backend, MongoDB, and more. Want me to add it?"
+User: "Yes"
+You: *uses add_source with url="https://github.com/lando-labs/fullstack-guild.git"*
+```
+
+Alternatively, users can:
+- Create custom agents from scratch using agent-architect
+- Add their company/team's agent library
+- Start with just `my-agents/` and build their own collection
 
 ### Deploying Agents to a Project
 
@@ -336,13 +358,13 @@ agent_sources:
     git:
       enabled: false
 
-  - name: official-agents
+  - name: fullstack-guild      # Example: added via add_source
     type: local
-    path: ~/cami-workspace/sources/official-agents
-    priority: 100        # Lower priority (defaults)
+    path: ~/cami-workspace/sources/fullstack-guild
+    priority: 100
     git:
       enabled: true
-      remote: git@github.com:example/agents.git
+      remote: https://github.com/lando-labs/fullstack-guild.git
 
 deploy_locations:
   - name: my-app
