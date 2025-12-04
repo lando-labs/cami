@@ -789,6 +789,170 @@ func registerMCPTools(server *mcp.Server) {
 		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: responseText}}}, nil, nil
 	})
 
+	// Register update_location tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "update_location",
+		Description: `Update a project location's name or path in CAMI's configuration.
+
+**WHEN TO USE THIS TOOL:**
+- User wants to rename a project's friendly name (safe operation)
+- User has manually moved/renamed a project directory and needs to update CAMI's tracking
+- User asks to "rename project", "update project name", or "change project path"
+
+**IMPORTANT WARNINGS FOR USERS:**
+
+1. **Renaming the friendly name only (new_name)** - SAFE operation that only updates config.yaml
+
+2. **Updating the path (new_path)** - Use this AFTER manually moving a directory. This updates:
+   - config.yaml (deploy_locations)
+   - deployments.yaml (central manifest tracking)
+
+3. **Renaming the actual directory (rename_dir=true)** - POTENTIALLY BREAKING operation:
+   - Will rename the folder on disk
+   - May break IDE projects, git worktrees, shell aliases, or bookmarks pointing to the old path
+   - Other tools/scripts referencing the old path will fail
+   - ALWAYS warn the user before using this option
+
+**RECOMMENDED WORKFLOW for directory rename:**
+1. First ask user: "This will rename the directory on disk. Other tools may break. Continue?"
+2. If confirmed, use rename_dir=true
+3. Inform user to update any external references to the old path`,
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		CurrentName string `json:"current_name" jsonschema_description:"Current name of the location to update (required)"`
+		NewName     string `json:"new_name,omitempty" jsonschema_description:"New friendly name for the location (optional, safe operation)"`
+		NewPath     string `json:"new_path,omitempty" jsonschema_description:"New path if directory was moved/renamed externally (optional, updates tracking only)"`
+		RenameDir   bool   `json:"rename_dir,omitempty" jsonschema_description:"Actually rename the directory on disk (CAUTION: may break external tools, IDE projects, scripts)"`
+	}) (*mcp.CallToolResult, any, error) {
+		if args.CurrentName == "" {
+			return nil, nil, fmt.Errorf("current_name is required")
+		}
+
+		if args.NewName == "" && args.NewPath == "" && !args.RenameDir {
+			return nil, nil, fmt.Errorf("at least one of new_name, new_path, or rename_dir must be specified")
+		}
+
+		cfg, err := config.Load()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Get current location
+		currentLoc, err := cfg.GetDeployLocation(args.CurrentName)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		var responseText string
+		var warnings []string
+		oldPath := currentLoc.Path
+		actualNewPath := args.NewPath
+
+		// Handle directory rename on disk
+		if args.RenameDir {
+			if args.NewName == "" {
+				return nil, nil, fmt.Errorf("new_name is required when rename_dir is true")
+			}
+
+			// Construct new path by replacing the last directory component
+			parentDir := filepath.Dir(currentLoc.Path)
+			actualNewPath = filepath.Join(parentDir, args.NewName)
+
+			// Check if source exists
+			if _, err := os.Stat(currentLoc.Path); os.IsNotExist(err) {
+				return nil, nil, fmt.Errorf("current directory does not exist: %s", currentLoc.Path)
+			}
+
+			// Check if destination already exists
+			if _, err := os.Stat(actualNewPath); err == nil {
+				return nil, nil, fmt.Errorf("destination directory already exists: %s", actualNewPath)
+			}
+
+			// Perform the rename
+			if err := os.Rename(currentLoc.Path, actualNewPath); err != nil {
+				return nil, nil, fmt.Errorf("failed to rename directory: %w", err)
+			}
+
+			warnings = append(warnings, fmt.Sprintf("Directory renamed from %s to %s", currentLoc.Path, actualNewPath))
+			warnings = append(warnings, "External tools referencing the old path may need to be updated")
+		}
+
+		// Validate new path exists (if provided and not just renamed)
+		if actualNewPath != "" && !args.RenameDir {
+			if _, err := os.Stat(actualNewPath); os.IsNotExist(err) {
+				return nil, nil, fmt.Errorf("new path does not exist: %s (use rename_dir=true to rename the directory)", actualNewPath)
+			}
+		}
+
+		// Update config
+		changedPath, err := cfg.UpdateDeployLocation(args.CurrentName, args.NewName, actualNewPath)
+		if err != nil {
+			// If we renamed the directory but config update failed, try to rename back
+			if args.RenameDir && actualNewPath != "" {
+				_ = os.Rename(actualNewPath, currentLoc.Path)
+			}
+			return nil, nil, fmt.Errorf("failed to update location: %w", err)
+		}
+
+		// Update central manifest if path changed
+		if changedPath != "" || args.RenameDir {
+			centralManifest, err := manifest.ReadCentralManifest()
+			if err != nil {
+				log.Printf("Warning: failed to read central manifest: %v", err)
+			} else {
+				// Check if old path exists in manifest
+				if deployment, exists := centralManifest.Deployments[oldPath]; exists {
+					// Remove old entry and add new one
+					delete(centralManifest.Deployments, oldPath)
+					newPathKey := actualNewPath
+					if newPathKey == "" {
+						newPathKey = currentLoc.Path // Path didn't change
+					}
+					centralManifest.Deployments[newPathKey] = deployment
+
+					if err := manifest.WriteCentralManifest(centralManifest); err != nil {
+						log.Printf("Warning: failed to update central manifest: %v", err)
+					} else {
+						responseText += "✓ Updated central manifest (deployments.yaml)\n"
+					}
+				}
+			}
+		}
+
+		// Save config
+		if err := cfg.Save(); err != nil {
+			return nil, nil, fmt.Errorf("failed to save config: %w", err)
+		}
+
+		// Build response
+		responseText = "# Location Updated\n\n"
+
+		if args.NewName != "" {
+			responseText += fmt.Sprintf("✓ Name: %s → %s\n", args.CurrentName, args.NewName)
+		}
+		if actualNewPath != "" {
+			responseText += fmt.Sprintf("✓ Path: %s → %s\n", oldPath, actualNewPath)
+		}
+		responseText += "✓ Updated config.yaml\n"
+
+		if len(warnings) > 0 {
+			responseText += "\n## Warnings\n\n"
+			for _, warning := range warnings {
+				responseText += fmt.Sprintf("⚠️ %s\n", warning)
+			}
+		}
+
+		if args.RenameDir {
+			responseText += "\n## Next Steps\n\n"
+			responseText += "You may need to update:\n"
+			responseText += "- IDE project settings\n"
+			responseText += "- Shell aliases or bookmarks\n"
+			responseText += "- CI/CD configurations\n"
+			responseText += "- Any scripts referencing the old path\n"
+		}
+
+		return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: responseText}}}, nil, nil
+	})
+
 	// Register list_sources tool
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "list_sources",
