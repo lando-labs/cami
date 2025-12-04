@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "cami source reconcile --check-only --quiet"
+      }
+    ]
+  }
+}

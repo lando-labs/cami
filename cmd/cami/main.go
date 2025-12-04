@@ -1119,6 +1119,110 @@ func registerMCPTools(server *mcp.Server) {
 		}, nil, nil
 	})
 
+	// Register reconcile_sources tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "reconcile_sources",
+		Description: "Detect and fix untracked agent sources. " +
+			"Scans the sources directory and compares to config.yaml. " +
+			"Detects sources that exist on disk but aren't tracked in configuration. " +
+			"Use this proactively at session start or when sources seem out of sync.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		CheckOnly bool `json:"check_only,omitempty" jsonschema_description:"Only report issues without prompting to fix (default: false)"`
+		AutoAdd   bool `json:"auto_add,omitempty" jsonschema_description:"Automatically add untracked sources without prompting (default: false)"`
+	}) (*mcp.CallToolResult, any, error) {
+		// Reconcile sources
+		result, err := cli.ReconcileSources()
+		if err != nil {
+			return nil, nil, fmt.Errorf("reconcile failed: %w", err)
+		}
+
+		// Format response
+		var responseText string
+		responseText = "# Source Reconciliation\n\n"
+		responseText += fmt.Sprintf("**Sources on disk:** %d\n", result.TotalOnDisk)
+		responseText += fmt.Sprintf("**Sources in config:** %d\n\n", result.TotalInConfig)
+
+		// Check if everything is in sync
+		if len(result.UntrackedSources) == 0 && len(result.OrphanedConfigs) == 0 {
+			responseText += "✓ **All sources are in sync!**\n\n"
+			responseText += "No untracked sources or orphaned configurations found.\n"
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, result, nil
+		}
+
+		// Report untracked sources
+		if len(result.UntrackedSources) > 0 {
+			responseText += fmt.Sprintf("## Untracked Sources (%d)\n\n", len(result.UntrackedSources))
+			responseText += "These directories exist in sources/ but are not in config.yaml:\n\n"
+			for _, src := range result.UntrackedSources {
+				responseText += fmt.Sprintf("• **%s** (%d agents)\n", src.Name, src.AgentCount)
+				responseText += fmt.Sprintf("  Path: %s\n", src.Path)
+				if src.HasGit && src.GitRemote != "" {
+					responseText += fmt.Sprintf("  Git: %s\n", src.GitRemote)
+				}
+				responseText += "\n"
+			}
+		}
+
+		// Report orphaned configs
+		if len(result.OrphanedConfigs) > 0 {
+			responseText += fmt.Sprintf("## Orphaned Configurations (%d)\n\n", len(result.OrphanedConfigs))
+			responseText += "These sources are in config.yaml but don't exist on disk:\n\n"
+			for _, name := range result.OrphanedConfigs {
+				responseText += fmt.Sprintf("• %s\n", name)
+			}
+			responseText += "\n"
+		}
+
+		// Handle auto-add if requested
+		if args.AutoAdd && len(result.UntrackedSources) > 0 {
+			// Add untracked sources to config
+			cfg, err := config.Load()
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to load config for auto-add: %w", err)
+			}
+
+			addedCount := 0
+			for _, src := range result.UntrackedSources {
+				source := config.AgentSource{
+					Name:     src.Name,
+					Type:     "local",
+					Path:     src.Path,
+					Priority: 50, // Default priority
+				}
+
+				if src.HasGit && src.GitRemote != "" {
+					source.Git = &config.GitConfig{
+						Enabled: true,
+						Remote:  src.GitRemote,
+					}
+				}
+
+				if err := cfg.AddAgentSource(source); err == nil {
+					addedCount++
+				}
+			}
+
+			if err := cfg.Save(); err != nil {
+				return nil, nil, fmt.Errorf("failed to save config after auto-add: %w", err)
+			}
+
+			responseText += fmt.Sprintf("## Auto-Add Results\n\n")
+			responseText += fmt.Sprintf("✓ Added %d sources to configuration\n", addedCount)
+		} else if !args.CheckOnly && len(result.UntrackedSources) > 0 {
+			// Provide guidance
+			responseText += "## Recommended Action\n\n"
+			responseText += "To add these sources to your configuration:\n"
+			responseText += "1. Call this tool again with `auto_add=true`\n"
+			responseText += "2. Or use `mcp__cami__add_source` for each source manually\n"
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, result, nil
+	})
+
 	// Register create_project tool
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "create_project",
