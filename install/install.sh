@@ -161,7 +161,7 @@ cp "$TEMPLATE_DIR/.gitignore" "$INSTALL_DIR/"
 cp "$TEMPLATE_DIR/.mcp.json" "$INSTALL_DIR/"
 
 # Deploy agent-architect (the only bundled agent)
-print_info "Deploying agent-architect v4.0.0..."
+print_info "Deploying agent-architect v4.1.0..."
 cp "$TEMPLATE_DIR/agent-architect.md" "$INSTALL_DIR/.claude/agents/"
 
 # Deploy settings.json with SessionStart hook for reconciliation
