@@ -98,11 +98,13 @@ if [ -d "$INSTALL_DIR" ]; then
     echo "This will update:"
     echo "  ✓ Bundled agents (.claude/agents/agent-architect.md)"
     echo "  ✓ Template files (CLAUDE.md, README.md, .mcp.json, .gitignore)"
+    echo "  ✓ Claude settings (if using default CAMI settings)"
     echo ""
     echo "This will NOT touch:"
     echo "  ✗ config.yaml"
     echo "  ✗ sources/my-agents/"
     echo "  ✗ Your agent sources"
+    echo "  ✗ Custom Claude settings (if modified)"
     echo ""
     print_info "⚠️  If you've customized CLAUDE.md, back it up first!"
     echo ""
@@ -148,6 +150,7 @@ if [ "$IS_UPGRADE" = true ]; then
     # Backup user-modifiable files
     [ -f "$INSTALL_DIR/CLAUDE.md" ] && cp "$INSTALL_DIR/CLAUDE.md" "$BACKUP_DIR/"
     [ -f "$INSTALL_DIR/.claude/agents/agent-architect.md" ] && cp "$INSTALL_DIR/.claude/agents/agent-architect.md" "$BACKUP_DIR/"
+    [ -f "$INSTALL_DIR/.claude/settings.json" ] && cp "$INSTALL_DIR/.claude/settings.json" "$BACKUP_DIR/"
 
     print_info "Backed up existing files to $BACKUP_DIR"
 fi
@@ -160,6 +163,23 @@ cp "$TEMPLATE_DIR/.mcp.json" "$INSTALL_DIR/"
 # Deploy agent-architect (the only bundled agent)
 print_info "Deploying agent-architect v4.0.0..."
 cp "$TEMPLATE_DIR/agent-architect.md" "$INSTALL_DIR/.claude/agents/"
+
+# Deploy settings.json with SessionStart hook for reconciliation
+if [ ! -f "$INSTALL_DIR/.claude/settings.json" ]; then
+    cp "$TEMPLATE_DIR/.claude/settings.json" "$INSTALL_DIR/.claude/"
+    print_success "Installed .claude/settings.json with SessionStart hook"
+else
+    # Only update if it's our default template (check for reconcile hook)
+    if grep -q "cami source reconcile" "$INSTALL_DIR/.claude/settings.json" 2>/dev/null; then
+        if [ "$IS_UPGRADE" = true ]; then
+            cp "$INSTALL_DIR/.claude/settings.json" "$BACKUP_DIR/" 2>/dev/null || true
+        fi
+        cp "$TEMPLATE_DIR/.claude/settings.json" "$INSTALL_DIR/.claude/"
+        print_success "Updated .claude/settings.json"
+    else
+        print_info "Skipping .claude/settings.json (custom configuration detected)"
+    fi
+fi
 
 # Copy templates to my-agents source (only if they don't exist)
 if [ ! -f "$INSTALL_DIR/sources/my-agents/.camiignore" ]; then

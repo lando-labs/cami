@@ -29,6 +29,7 @@ when agent names conflict (1 = highest priority, 100 = lowest).`,
 	cmd.AddCommand(NewSourceUpdateCommand())
 	cmd.AddCommand(NewSourceStatusCommand())
 	cmd.AddCommand(NewSourceRemoveCommand())
+	cmd.AddCommand(NewSourceReconcileCommand())
 
 	return cmd
 }
@@ -420,4 +421,256 @@ func findSourcesDir() (string, error) {
 	}
 
 	return "", fmt.Errorf("sources directory not found (run from CAMI workspace or run 'cami init' first)")
+}
+
+// NewSourceReconcileCommand creates the source reconcile command
+func NewSourceReconcileCommand() *cobra.Command {
+	var checkOnly bool
+	var quiet bool
+	var autoAdd bool
+
+	cmd := &cobra.Command{
+		Use:   "reconcile",
+		Short: "Detect and fix untracked sources",
+		Long: `Scan the sources directory and compare to config.yaml.
+
+Detects sources that exist on disk but aren't tracked in configuration.
+This can happen when sources are manually cloned or when config save fails.
+
+Use --check-only to just report issues without prompting to fix.
+Use --quiet to suppress output when no issues found (useful for hooks).
+Use --auto-add to automatically add untracked sources without prompting.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return SourceReconcileCommand(checkOnly, quiet, autoAdd)
+		},
+	}
+
+	cmd.Flags().BoolVar(&checkOnly, "check-only", false, "Only check for issues, don't offer to fix")
+	cmd.Flags().BoolVar(&quiet, "quiet", false, "Suppress output when no issues found")
+	cmd.Flags().BoolVar(&autoAdd, "auto-add", false, "Automatically add untracked sources")
+
+	return cmd
+}
+
+// ReconcileResult holds the result of a reconcile operation
+type ReconcileResult struct {
+	UntrackedSources []UntrackedSource
+	OrphanedConfigs  []string // Sources in config but not on disk
+	TotalOnDisk      int
+	TotalInConfig    int
+}
+
+// UntrackedSource represents a source directory not in config
+type UntrackedSource struct {
+	Name       string
+	Path       string
+	AgentCount int
+	HasGit     bool
+	GitRemote  string
+}
+
+// SourceReconcileCommand reconciles sources directory with config
+func SourceReconcileCommand(checkOnly, quiet, autoAdd bool) error {
+	result, err := ReconcileSources()
+	if err != nil {
+		return err
+	}
+
+	hasIssues := len(result.UntrackedSources) > 0 || len(result.OrphanedConfigs) > 0
+
+	// Quiet mode: exit silently if no issues
+	if quiet && !hasIssues {
+		return nil
+	}
+
+	// Report findings
+	if !hasIssues {
+		fmt.Println("✓ All sources are properly tracked")
+		fmt.Printf("  %d sources on disk, %d in config\n", result.TotalOnDisk, result.TotalInConfig)
+		return nil
+	}
+
+	// Report untracked sources
+	if len(result.UntrackedSources) > 0 {
+		fmt.Printf("⚠ Found %d untracked source(s):\n\n", len(result.UntrackedSources))
+		for _, src := range result.UntrackedSources {
+			fmt.Printf("  • %s\n", src.Name)
+			fmt.Printf("    Path: %s\n", src.Path)
+			fmt.Printf("    Agents: %d\n", src.AgentCount)
+			if src.HasGit {
+				fmt.Printf("    Git: %s\n", src.GitRemote)
+			}
+			fmt.Println()
+		}
+	}
+
+	// Report orphaned configs
+	if len(result.OrphanedConfigs) > 0 {
+		fmt.Printf("⚠ Found %d orphaned config(s) (in config but not on disk):\n\n", len(result.OrphanedConfigs))
+		for _, name := range result.OrphanedConfigs {
+			fmt.Printf("  • %s\n", name)
+		}
+		fmt.Println()
+	}
+
+	// Check-only mode: just report
+	if checkOnly {
+		return nil
+	}
+
+	// Auto-add mode or prompt
+	if len(result.UntrackedSources) > 0 {
+		if autoAdd {
+			return addUntrackedSources(result.UntrackedSources)
+		}
+
+		// Prompt user
+		fmt.Print("Add untracked sources to config? (y/N): ")
+		var response string
+		fmt.Scanln(&response)
+		response = strings.ToLower(strings.TrimSpace(response))
+		if response == "y" || response == "yes" {
+			return addUntrackedSources(result.UntrackedSources)
+		}
+	}
+
+	return nil
+}
+
+// ReconcileSources compares sources directory with config
+func ReconcileSources() (*ReconcileResult, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	sourcesDir, err := findSourcesDir()
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ReconcileResult{
+		TotalInConfig: len(cfg.AgentSources),
+	}
+
+	// Build set of configured source paths
+	configuredPaths := make(map[string]string) // path -> name
+	configuredNames := make(map[string]bool)
+	for _, src := range cfg.AgentSources {
+		// Normalize path for comparison
+		absPath, _ := filepath.Abs(src.Path)
+		configuredPaths[absPath] = src.Name
+		configuredNames[src.Name] = true
+	}
+
+	// Scan sources directory
+	entries, err := os.ReadDir(sourcesDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read sources directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		// Skip hidden directories
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+
+		result.TotalOnDisk++
+
+		dirPath := filepath.Join(sourcesDir, entry.Name())
+		absPath, _ := filepath.Abs(dirPath)
+
+		// Check if this directory is in config
+		if _, exists := configuredPaths[absPath]; exists {
+			continue
+		}
+
+		// Also check by name in case paths differ slightly
+		if configuredNames[entry.Name()] {
+			continue
+		}
+
+		// This is an untracked source
+		untracked := UntrackedSource{
+			Name: entry.Name(),
+			Path: dirPath,
+		}
+
+		// Count agents
+		agents, err := agent.LoadAgentsFromPath(dirPath)
+		if err == nil {
+			untracked.AgentCount = len(agents)
+		}
+
+		// Check for git
+		gitDir := filepath.Join(dirPath, ".git")
+		if _, err := os.Stat(gitDir); err == nil {
+			untracked.HasGit = true
+			// Try to get remote URL
+			cmd := exec.Command("git", "-C", dirPath, "remote", "get-url", "origin")
+			if output, err := cmd.Output(); err == nil {
+				untracked.GitRemote = strings.TrimSpace(string(output))
+			}
+		}
+
+		result.UntrackedSources = append(result.UntrackedSources, untracked)
+	}
+
+	// Check for orphaned configs (in config but not on disk)
+	for _, src := range cfg.AgentSources {
+		if _, err := os.Stat(src.Path); os.IsNotExist(err) {
+			result.OrphanedConfigs = append(result.OrphanedConfigs, src.Name)
+		}
+	}
+
+	return result, nil
+}
+
+// addUntrackedSources adds untracked sources to config
+func addUntrackedSources(sources []UntrackedSource) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	for _, src := range sources {
+		// Determine priority (default 50 for discovered sources)
+		priority := 50
+
+		newSource := config.AgentSource{
+			Name:     src.Name,
+			Type:     "local",
+			Path:     src.Path,
+			Priority: priority,
+		}
+
+		if src.HasGit && src.GitRemote != "" {
+			newSource.Git = &config.GitConfig{
+				Enabled: true,
+				Remote:  src.GitRemote,
+			}
+		} else {
+			newSource.Git = &config.GitConfig{
+				Enabled: false,
+			}
+		}
+
+		if err := cfg.AddAgentSource(newSource); err != nil {
+			fmt.Printf("  ✗ Failed to add %s: %v\n", src.Name, err)
+			continue
+		}
+
+		fmt.Printf("  ✓ Added %s (priority %d, %d agents)\n", src.Name, priority, src.AgentCount)
+	}
+
+	if err := cfg.Save(); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
+	}
+
+	fmt.Println("\n✓ Config updated")
+	return nil
 }
