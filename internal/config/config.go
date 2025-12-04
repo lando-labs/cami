@@ -251,6 +251,66 @@ func (c *Config) RemoveDeployLocationByName(name string) error {
 	return fmt.Errorf("location with name %q not found", name)
 }
 
+// UpdateDeployLocation updates a deployment location's name and/or path
+// Returns the old path if it was changed (for manifest updates), empty string otherwise
+func (c *Config) UpdateDeployLocation(currentName, newName, newPath string) (oldPath string, err error) {
+	// Find the location
+	var locationIndex int = -1
+	for i, loc := range c.Locations {
+		if loc.Name == currentName {
+			locationIndex = i
+			break
+		}
+	}
+
+	if locationIndex == -1 {
+		return "", fmt.Errorf("location with name %q not found", currentName)
+	}
+
+	// Check for name conflicts if renaming
+	if newName != "" && newName != currentName {
+		for i, loc := range c.Locations {
+			if i != locationIndex && loc.Name == newName {
+				return "", fmt.Errorf("location with name %q already exists", newName)
+			}
+		}
+	}
+
+	// Check for path conflicts if changing path
+	if newPath != "" && newPath != c.Locations[locationIndex].Path {
+		for i, loc := range c.Locations {
+			if i != locationIndex && loc.Path == newPath {
+				return "", fmt.Errorf("location with path %q already exists (name: %s)", newPath, loc.Name)
+			}
+		}
+	}
+
+	// Store old path for manifest updates
+	if newPath != "" && newPath != c.Locations[locationIndex].Path {
+		oldPath = c.Locations[locationIndex].Path
+	}
+
+	// Apply updates
+	if newName != "" {
+		c.Locations[locationIndex].Name = newName
+	}
+	if newPath != "" {
+		c.Locations[locationIndex].Path = newPath
+	}
+
+	return oldPath, nil
+}
+
+// GetDeployLocation retrieves a deployment location by name
+func (c *Config) GetDeployLocation(name string) (*DeployLocation, error) {
+	for _, loc := range c.Locations {
+		if loc.Name == name {
+			return &loc, nil
+		}
+	}
+	return nil, fmt.Errorf("location with name %q not found", name)
+}
+
 // GetDefaultProjectsDir returns the default directory for creating new projects
 // Falls back to ~/projects if not configured
 func GetDefaultProjectsDir() (string, error) {
