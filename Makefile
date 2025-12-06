@@ -8,7 +8,7 @@ INSTALL_DIR=$(HOME)/cami
 BIN_DIR=/usr/local/bin
 
 # Go build flags
-LDFLAGS=-ldflags "-X main.Version=$(VERSION)"
+LDFLAGS=-ldflags "-X main.version=$(VERSION)"
 
 help: ## Show this help message
 	@echo "CAMI Makefile"

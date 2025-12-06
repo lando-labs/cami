@@ -23,18 +23,28 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const version = "0.4.0"
+// version is set via ldflags during build: -X main.version=<tag>
+// Falls back to "dev" for local development builds
+var version = "dev"
 
 // MCP server constants
-const (
-	serverName    = "cami"
-	serverVersion = "0.4.0"
-)
+const serverName = "cami"
+
+// displayVersion returns a formatted version string for display
+// Handles both "dev" and git describe output like "v0.4.4" or "v0.4.4-1-gabcdef"
+func displayVersion() string {
+	// If version already starts with 'v', don't add another one
+	if strings.HasPrefix(version, "v") {
+		return version
+	}
+	// For "dev" or other non-prefixed versions, add the 'v'
+	return "v" + version
+}
 
 // ========== CLI FUNCTIONS ==========
 
 func printHelp() {
-	fmt.Printf("CAMI v%s - Claude Agent Management Interface\n\n", version)
+	fmt.Printf("CAMI %s - Claude Agent Management Interface\n\n", displayVersion())
 	fmt.Println("A tool for managing and deploying Claude Code agents.")
 	fmt.Println()
 	fmt.Println("USAGE:")
@@ -227,7 +237,7 @@ func runCLI() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "-v", "--version":
-			fmt.Printf("CAMI v%s\n", version)
+			fmt.Printf("CAMI %s\n", displayVersion())
 			fmt.Println("Claude Agent Management Interface")
 			os.Exit(0)
 		case "-h", "--help":
@@ -418,14 +428,14 @@ func runMCPServer() {
 	// Create MCP server
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    serverName,
-		Version: serverVersion,
+		Version: version,
 	}, nil)
 
 	// Register all MCP tools
 	registerMCPTools(server)
 
 	// Start server with stdio transport
-	log.Printf("Starting CAMI MCP server v%s", serverVersion)
+	log.Printf("Starting CAMI MCP server %s", displayVersion())
 	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
