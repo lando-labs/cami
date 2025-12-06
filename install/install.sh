@@ -4,7 +4,6 @@ set -e
 # CAMI Installation Script
 # This script installs CAMI and creates the user workspace
 
-VERSION="0.4.0"
 INSTALL_DIR="${CAMI_DIR:-$HOME/cami-workspace}"
 BIN_DIR="${BIN_DIR:-/usr/local/bin}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,23 +39,15 @@ detect_arch() {
     esac
 }
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  CAMI Installation v$VERSION"
-echo "  Claude Agent Management Interface"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-
-# Detect platform
+# Detect platform first (needed for binary name)
 OS=$(detect_os)
 ARCH=$(detect_arch)
 
 if [ "$OS" = "unknown" ] || [ "$ARCH" = "unknown" ]; then
-    print_error "Unsupported platform: OS=$OS, ARCH=$ARCH"
+    echo -e "${RED}✗${NC} Unsupported platform: OS=$OS, ARCH=$ARCH"
     echo "Supported platforms: macOS (amd64/arm64), Linux (amd64/arm64), Windows (amd64/arm64)"
     exit 1
 fi
-
-print_info "Detected platform: $OS/$ARCH"
 
 # Check if binary exists in script directory
 BINARY_NAME="cami"
@@ -66,14 +57,48 @@ fi
 
 # Look for binary (either in current dir during build or in releases)
 BINARY_PATH=""
-if [ -f "$SCRIPT_DIR/../cami" ]; then
-    BINARY_PATH="$(cd "$SCRIPT_DIR/.." && pwd)/cami"
-elif [ -f "$SCRIPT_DIR/cami" ]; then
-    BINARY_PATH="$(cd "$SCRIPT_DIR" && pwd)/cami"
+if [ -f "$SCRIPT_DIR/../$BINARY_NAME" ]; then
+    BINARY_PATH="$(cd "$SCRIPT_DIR/.." && pwd)/$BINARY_NAME"
+elif [ -f "$SCRIPT_DIR/$BINARY_NAME" ]; then
+    BINARY_PATH="$(cd "$SCRIPT_DIR" && pwd)/$BINARY_NAME"
 else
-    print_error "CAMI binary not found. Please run 'make build' first or download a release."
+    echo -e "${RED}✗${NC} CAMI binary not found. Please run 'make build' first or download a release."
     exit 1
 fi
+
+# Get version from the binary itself (single source of truth)
+VERSION=$("$BINARY_PATH" --version 2>/dev/null | head -1 | sed 's/CAMI v//')
+
+# Validate version - must be a proper version string, not "dev"
+if [ -z "$VERSION" ]; then
+    echo -e "${RED}✗${NC} Failed to get version from binary"
+    echo "The binary at $BINARY_PATH did not return a valid version."
+    exit 1
+fi
+
+if [ "$VERSION" = "dev" ]; then
+    echo -e "${YELLOW}⚠${NC}  Development build detected (version: dev)"
+    echo ""
+    echo "This binary was built without a version tag. For production installs,"
+    echo "please use an official release from:"
+    echo "  https://github.com/lando-labs/cami/releases"
+    echo ""
+    read -p "Continue with development build? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${RED}✗${NC} Installation cancelled"
+        exit 1
+    fi
+    echo ""
+fi
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  CAMI Installation v$VERSION"
+echo "  Claude Agent Management Interface"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+print_info "Detected platform: $OS/$ARCH"
 
 echo ""
 print_info "Workspace directory: $INSTALL_DIR"
