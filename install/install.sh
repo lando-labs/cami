@@ -5,7 +5,7 @@ set -e
 # This script installs CAMI and creates the user workspace
 
 INSTALL_DIR="${CAMI_DIR:-$HOME/cami-workspace}"
-BIN_DIR="${BIN_DIR:-/usr/local/bin}"
+BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_DIR="$SCRIPT_DIR/templates"
 
@@ -102,7 +102,7 @@ print_info "Detected platform: $OS/$ARCH"
 
 echo ""
 print_info "Workspace directory: $INSTALL_DIR"
-print_info "Binary directory: $BIN_DIR (requires sudo)"
+print_info "Binary directory: $BIN_DIR"
 echo ""
 
 # Ask user for custom workspace location
@@ -121,7 +121,7 @@ if [ -d "$INSTALL_DIR" ]; then
     print_info "CAMI workspace already exists at $INSTALL_DIR"
     echo ""
     echo "This will update:"
-    echo "  ✓ Bundled agents (.claude/agents/agent-architect.md)"
+    echo "  ✓ Bundled agents (agent-architect, skill-architect, skilled-agent-architect)"
     echo "  ✓ Template files (CLAUDE.md, README.md, .mcp.json, .gitignore)"
     echo "  ✓ Claude settings (if using default CAMI settings)"
     echo ""
@@ -183,11 +183,16 @@ fi
 cp "$TEMPLATE_DIR/CLAUDE.md" "$INSTALL_DIR/"
 cp "$TEMPLATE_DIR/README.md" "$INSTALL_DIR/"
 cp "$TEMPLATE_DIR/.gitignore" "$INSTALL_DIR/"
-cp "$TEMPLATE_DIR/.mcp.json" "$INSTALL_DIR/"
 
-# Deploy agent-architect (the only bundled agent)
-print_info "Deploying agent-architect v4.1.0..."
+# Copy and configure .mcp.json with actual binary path
+sed "s|CAMI_BIN_PLACEHOLDER|$BIN_DIR/cami|g" "$TEMPLATE_DIR/.mcp.json" > "$INSTALL_DIR/.mcp.json"
+
+# Deploy bundled agents
+print_info "Deploying bundled agents..."
 cp "$TEMPLATE_DIR/agent-architect.md" "$INSTALL_DIR/.claude/agents/"
+cp "$TEMPLATE_DIR/skill-architect.md" "$INSTALL_DIR/.claude/agents/"
+cp "$TEMPLATE_DIR/skilled-agent-architect.md" "$INSTALL_DIR/.claude/agents/"
+print_success "Deployed agent-architect, skill-architect, skilled-agent-architect"
 
 # Deploy settings.json with SessionStart hook for reconciliation
 if [ ! -f "$INSTALL_DIR/.claude/settings.json" ]; then
@@ -273,19 +278,26 @@ print_info "Installing CAMI binary to $BIN_DIR..."
 # Create bin directory if it doesn't exist
 if [ ! -d "$BIN_DIR" ]; then
     print_info "Creating $BIN_DIR directory..."
-    sudo mkdir -p "$BIN_DIR"
+    mkdir -p "$BIN_DIR"
 fi
 
-if [ ! -w "$BIN_DIR" ]; then
-    print_info "Need sudo permissions to install to $BIN_DIR"
-    sudo cp "$BINARY_PATH" "$BIN_DIR/cami"
-    sudo chmod +x "$BIN_DIR/cami"
-else
-    cp "$BINARY_PATH" "$BIN_DIR/cami"
-    chmod +x "$BIN_DIR/cami"
-fi
+cp "$BINARY_PATH" "$BIN_DIR/cami"
+chmod +x "$BIN_DIR/cami"
 
 print_success "CAMI binary installed to $BIN_DIR/cami"
+
+# Check if BIN_DIR is in PATH
+if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
+    echo ""
+    print_info "⚠️  $BIN_DIR is not in your PATH"
+    echo ""
+    echo "  Add this to your ~/.zshrc or ~/.bashrc:"
+    echo "     export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo ""
+    echo "  Then restart your terminal or run:"
+    echo "     source ~/.zshrc  # or source ~/.bashrc"
+    echo ""
+fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -296,14 +308,12 @@ echo "📂 CAMI workspace: $INSTALL_DIR"
 echo "🔧 Binary location: $BIN_DIR/cami"
 echo ""
 
-# If using custom location, inform user about CAMI_DIR
+# If using custom workspace location, inform user about CAMI_DIR
 if [ "$INSTALL_DIR" != "$HOME/cami-workspace" ]; then
     echo "⚠️  Custom workspace location detected!"
     echo ""
     echo "  Add this to your ~/.zshrc or ~/.bashrc:"
     echo "     export CAMI_DIR=\"$INSTALL_DIR\""
-    echo ""
-    echo "  Then restart your terminal or run: source ~/.zshrc"
     echo ""
 fi
 

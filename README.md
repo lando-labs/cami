@@ -6,14 +6,16 @@ CAMI is a Model Context Protocol (MCP) server that enables Claude Code to dynami
 
 ## Features
 
-- **19 MCP Tools**: Native Claude Code integration for complete agent lifecycle management
+- **25 MCP Tools**: Native Claude Code integration for complete agent and skill lifecycle management
+- **Skillset Architecture**: Separate agents (methodology) from skills (implementation) for flexible tech stack support
 - **Global Agent Storage**: Single source of truth at `~/cami-workspace/sources/`
-- **Priority-Based Deduplication**: Override agents with custom versions (lower priority number = higher precedence)
-- **Deployment Tracking**: Automatic manifest creation tracking agent versions, sources, and hashes
+- **Priority-Based Deduplication**: Override agents/skills with custom versions (lower priority number = higher precedence)
+- **Deployment Tracking**: Automatic manifest creation tracking agent/skill versions, sources, and hashes
 - **Normalization System**: Analyze and standardize project agent deployments
 - **Smart Documentation**: Automatic CLAUDE.md updates with deployed agent information
-- **Multiple Sources**: Manage agents from Git repositories with priority-based loading
+- **Multiple Sources**: Manage agents and skills from Git repositories with priority-based loading
 - **Git-Trackable Workspace**: Optionally version control your CAMI setup and custom agents
+- **No Sudo Required**: User-local installation to `~/.local/bin/`
 
 ## Installation
 
@@ -34,7 +36,14 @@ make install
 
 This creates:
 - `~/cami-workspace/` - Your CAMI workspace
-- `/usr/local/bin/cami` - Binary on your PATH
+- `~/.local/bin/cami` - Binary (user-local, no sudo required)
+
+The MCP server works immediately after install. For CLI usage from any directory, add `~/.local/bin` to your PATH:
+
+```bash
+# Add to ~/.zshrc or ~/.bashrc
+export PATH="$HOME/.local/bin:$PATH"
+```
 
 ### Platform Notes
 
@@ -49,7 +58,7 @@ Then follow the standard installation instructions above.
 
 **macOS & Linux**
 
-Works on both Intel and Apple Silicon (arm64). Installation requires `sudo` for copying the binary to `/usr/local/bin`.
+Works on both Intel and Apple Silicon (arm64). No sudo required - binary installs to `~/.local/bin/`.
 
 ### First-Time Setup
 
@@ -99,13 +108,13 @@ $ cami scan ~/projects/my-app
 ├── .gitignore                   # Git ignore rules
 ├── config.yaml                  # CAMI configuration
 ├── .claude/
-│   └── agents/                  # CAMI's own agents
+│   └── agents/                  # Bundled agents (agent-architect, skill-architect, etc.)
 ├── sources/                     # Agent sources
 │   ├── my-agents/              # Your custom agents
 │   ├── team-agents/            # (if added)
 │   └── fullstack-guild/        # Example: guild added via add_source
 
-/usr/local/bin/cami             # Binary on PATH
+~/.local/bin/cami               # Binary (user-local)
 ```
 
 ### Priority-Based Deduplication
@@ -145,7 +154,7 @@ cami source add https://github.com/lando-labs/game-dev-guild.git
 
 ## MCP Tools
 
-CAMI provides 19 MCP tools for Claude Code:
+CAMI provides 25 MCP tools for Claude Code:
 
 **Project Management**
 - `create_project` - Create new project with agents and documentation
@@ -153,9 +162,17 @@ CAMI provides 19 MCP tools for Claude Code:
 
 **Agent Management**
 - `list_agents` - List all available agents from configured sources
-- `deploy_agents` - Deploy agents to `.claude/agents/` with automatic manifest tracking
+- `deploy_agents` - Deploy agents to `.claude/agents/` (supports `with_skills` parameter)
 - `scan_deployed_agents` - Check deployed agents and version status
 - `update_claude_md` - Update CLAUDE.md with agent documentation
+
+**Skill Management** (New in v0.5.0)
+- `list_skills` - List available skills with filtering by tags/category
+- `list_skillsets` - List skillset collections with tech stack info
+- `deploy_skills` - Deploy skills to `.claude/skills/`
+- `scan_deployed_skills` - Check deployed skills and version status
+- `add_skill_source` - Add skill source repository
+- `recommend_skills` - Suggest skills based on STRATEGIES.yaml tech stack
 
 **Source Management**
 - `list_sources` - List all configured agent sources with compliance status
@@ -168,7 +185,7 @@ CAMI provides 19 MCP tools for Claude Code:
 - `list_locations` - List all tracked project locations
 - `remove_location` - Unregister project directory
 
-**Normalization (Phase 1)**
+**Normalization**
 - `detect_project_state` - Analyze project's CAMI integration level
 - `normalize_project` - Create manifests and link agents to sources
 - `detect_source_state` - Analyze source for CAMI compliance
@@ -416,45 +433,57 @@ claude
 
 ## Version
 
-**CAMI v0.4.0** - Current Release
+**CAMI v0.5.0** - Current Release
 
-### What's New in v0.4.0
-- ✅ **Agent Classification System** - Three-class agent taxonomy:
-  - **Workflow Specialist** (Task Automator) - 15/70/15 phase weights, uses `haiku`
-  - **Technology Implementer** (Feature Builder) - 30/55/15 phase weights, uses `sonnet`
-  - **Strategic Planner** (System Architect) - 45/30/25 phase weights, uses `opus`
-- ✅ **agent-architect v4.0.0** - Auto-classification, model selection, STRATEGIES.yaml integration
-- ✅ **Enhanced Onboarding** - Improved `onboard` tool with agent-architect status and deployment counts
-- ✅ **Installer Upgrades** - Smart upgrade support with automatic backups
-- ✅ **STRATEGIES.yaml Documentation Location** - Configure where agents write documentation
+### What's New in v0.5.0
 
-### Previous Release (v0.3.0)
-- Single binary with dual modes (MCP + CLI)
-- 19 MCP tools for complete agent lifecycle management
-- Deployment tracking with automatic manifest creation
-- Normalization system (Phase 1 complete)
-- Project creation workflow with `create_project` tool
-- Global agent storage at `~/cami-workspace/sources/`
-- Priority-based multi-source deduplication (1 = highest, 100 = lowest)
-- Source compliance checking and normalization
-- .camiignore support with glob patterns
-- STRATEGIES.yaml for agent behavioral guidance
+#### Skillset Architecture (Major Feature)
+CAMI now supports **separation of concerns** between agents (methodology/WHO) and skills (implementation/HOW):
+
+- ✅ **Skills Support** - Deploy Claude Code skills alongside agents
+  - Skills provide implementation patterns (code syntax, framework conventions)
+  - Agents provide methodology (thinking patterns, quality standards, decision frameworks)
+- ✅ **Skillset Collections** - Group related skills with optional SKILLSET.yaml metadata
+- ✅ **6 New MCP Tools** for skill management:
+  - `list_skills` - List available skills with filtering
+  - `list_skillsets` - List skillset collections
+  - `deploy_skills` - Deploy skills to `.claude/skills/`
+  - `scan_deployed_skills` - Check deployed skill status
+  - `add_skill_source` - Add skill source repositories
+  - `recommend_skills` - Suggest skills based on STRATEGIES.yaml tech stack
+- ✅ **Enhanced `deploy_agents`** - Deploy skills alongside agents with `with_skills` parameter
+- ✅ **Tech Stack Matching** - Skillsets match STRATEGIES.yaml technologies via tags
+
+#### New Bundled Agents
+- ✅ **skill-architect v2.0.0** - Creates skills and skillsets with optimized descriptions
+- ✅ **skilled-agent-architect v1.0.0** - Creates methodology-focused agents designed to work with skills
+
+#### Installation Improvements
+- ✅ **No sudo required** - Binary now installs to `~/.local/bin/` instead of `/usr/local/bin`
+- ✅ **PATH detection** - Installer warns if `~/.local/bin` isn't in PATH
+
+### Previous Release (v0.4.0)
+- Agent Classification System (workflow-specialist, technology-implementer, strategic-planner)
+- agent-architect v4.0.0 with auto-classification and model selection
+- Enhanced onboarding with deployment counts
+- Smart installer upgrades with automatic backups
+- STRATEGIES.yaml documentation location
 
 ### Current Status
 
-**Alpha Testing** - v0.4.0
-- Agent classification system complete and tested
+**Alpha Testing** - v0.5.0
+- Skillset architecture complete and tested
+- Agent-skill separation validated via POC
 - Ready for early adopter testing
 - Official agent guilds available (game-dev, content, fullstack)
-- Homebrew tap coming soon
 
 ### Roadmap
 
-**v0.5.0 (Planned)**
+**v0.6.0 (Planned)**
 - Remote agent sources (HTTP, direct Git URLs)
-- Enhanced update detection
+- Enhanced update detection with semantic versioning
 - Team collaboration features
-- Skills support (Claude Code skills integration)
+- Skill marketplace/discovery
 
 ## License
 

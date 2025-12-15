@@ -38,12 +38,28 @@ type DeployedAgent struct {
 	Origin         string    `yaml:"origin,omitempty"`        // "cami", "external", "manual"
 }
 
+// DeployedSkill represents a skill in a manifest
+type DeployedSkill struct {
+	Name         string    `yaml:"name"`
+	Version      string    `yaml:"version"`
+	SkillsetName string    `yaml:"skillset_name,omitempty"` // Parent skillset directory name
+	Source       string    `yaml:"source"`                  // Source name
+	SourcePath   string    `yaml:"source_path"`             // Full path to source directory
+	Priority     int       `yaml:"priority"`
+	DeployedAt   time.Time `yaml:"deployed_at"`
+	ContentHash  string    `yaml:"content_hash"` // SHA256 of SKILL.md content
+	FileCount    int       `yaml:"file_count"`   // Total files deployed (SKILL.md + support files)
+	LinkedAgents []string  `yaml:"linked_agents,omitempty"` // Agents this skill is paired with
+	Origin       string    `yaml:"origin,omitempty"`        // "cami", "external", "manual"
+}
+
 // ProjectManifest represents a project's deployment manifest (local)
 type ProjectManifest struct {
 	Version      string          `yaml:"version"` // Schema version
 	State        ProjectState    `yaml:"state"`
 	NormalizedAt time.Time       `yaml:"normalized_at"`
 	Agents       []DeployedAgent `yaml:"agents"`
+	Skills       []DeployedSkill `yaml:"skills,omitempty"` // NEW: Deployed skills
 }
 
 // ProjectDeployment represents a project in the central manifest
@@ -52,6 +68,7 @@ type ProjectDeployment struct {
 	NormalizedAt time.Time       `yaml:"normalized_at"`
 	LastScanned  time.Time       `yaml:"last_scanned"`
 	Agents       []DeployedAgent `yaml:"agents"`
+	Skills       []DeployedSkill `yaml:"skills,omitempty"` // NEW: Deployed skills
 }
 
 // CentralManifest represents the central deployments manifest

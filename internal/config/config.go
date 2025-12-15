@@ -15,6 +15,7 @@ type Config struct {
 	InstallTimestamp   time.Time        `yaml:"install_timestamp,omitempty"` // When CAMI was installed
 	SetupComplete      bool             `yaml:"setup_complete,omitempty"`    // Whether initial setup is complete
 	AgentSources       []AgentSource    `yaml:"agent_sources"`
+	SkillSources       []SkillSource    `yaml:"skill_sources,omitempty"`        // NEW: Sources for skills/skillsets
 	Locations          []DeployLocation `yaml:"deploy_locations"`
 	DefaultProjectsDir string           `yaml:"default_projects_dir,omitempty"` // Where new projects are created by default
 }
@@ -32,6 +33,15 @@ type AgentSource struct {
 type GitConfig struct {
 	Enabled bool   `yaml:"enabled"`
 	Remote  string `yaml:"remote,omitempty"`
+}
+
+// SkillSource represents a source of skills/skillsets
+type SkillSource struct {
+	Name     string     `yaml:"name"`
+	Type     string     `yaml:"type"` // "local"
+	Path     string     `yaml:"path"`
+	Priority int        `yaml:"priority"`
+	Git      *GitConfig `yaml:"git,omitempty"`
 }
 
 // DeployLocation represents a deployment target
@@ -203,6 +213,40 @@ func (c *Config) GetAgentSource(name string) (*AgentSource, error) {
 		}
 	}
 	return nil, fmt.Errorf("source with name %q not found", name)
+}
+
+// AddSkillSource adds a new skill source
+func (c *Config) AddSkillSource(source SkillSource) error {
+	// Check if source with this name already exists
+	for _, s := range c.SkillSources {
+		if s.Name == source.Name {
+			return fmt.Errorf("skill source with name %q already exists", source.Name)
+		}
+	}
+
+	c.SkillSources = append(c.SkillSources, source)
+	return nil
+}
+
+// RemoveSkillSource removes a skill source by name
+func (c *Config) RemoveSkillSource(name string) error {
+	for i, source := range c.SkillSources {
+		if source.Name == name {
+			c.SkillSources = append(c.SkillSources[:i], c.SkillSources[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("skill source with name %q not found", name)
+}
+
+// GetSkillSource retrieves a skill source by name
+func (c *Config) GetSkillSource(name string) (*SkillSource, error) {
+	for _, source := range c.SkillSources {
+		if source.Name == name {
+			return &source, nil
+		}
+	}
+	return nil, fmt.Errorf("skill source with name %q not found", name)
 }
 
 // AddDeployLocation adds a new deployment location
