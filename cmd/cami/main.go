@@ -487,6 +487,57 @@ type ImportAgentsResponse struct {
 	DryRun         bool            `json:"dry_run"`
 }
 
+// Skill response types
+type SkillInfo struct {
+	Name         string   `json:"name"`
+	Version      string   `json:"version"`
+	Description  string   `json:"description"`
+	Tags         []string `json:"tags,omitempty"`
+	AllowedTools []string `json:"allowed_tools,omitempty"`
+	SourceName   string   `json:"source_name"`
+}
+
+type ListSkillsResponse struct {
+	Skills []SkillInfo `json:"skills"`
+}
+
+type SkillsetInfo struct {
+	Name        string   `json:"name"`
+	Version     string   `json:"version"`
+	Description string   `json:"description"`
+	Tags        []string `json:"tags,omitempty"`
+	SkillCount  int      `json:"skill_count"`
+	SourceName  string   `json:"source_name"`
+}
+
+type ListSkillsetsResponse struct {
+	Skillsets []SkillsetInfo `json:"skillsets"`
+}
+
+type DeploySkillsResponse struct {
+	TargetPath string              `json:"target_path"`
+	Results    []DeploySkillResult `json:"results"`
+}
+
+type DeploySkillResult struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+}
+
+type ScanDeployedSkillsResponse struct {
+	TargetPath string                `json:"target_path"`
+	Statuses   []DeployedSkillStatus `json:"statuses"`
+}
+
+type DeployedSkillStatus struct {
+	Name             string `json:"name"`
+	Version          string `json:"version"`
+	Status           string `json:"status"`
+	AvailableVersion string `json:"available_version,omitempty"`
+}
+
 func runMCPServer() {
 	// Initialize logger to stderr
 	log.SetOutput(os.Stderr)
@@ -2542,10 +2593,23 @@ func registerMCPTools(server *mcp.Server) {
 		Name: "list_skills",
 		Description: "List all available skills from configured skill sources. " +
 			"Skills are implementation containers with code patterns and framework conventions.",
-	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct{}) (*mcp.CallToolResult, any, error) {
+	}, func(ctx context.Context, req *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
 		skills, err := loadAllSkills()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to load skills: %w", err)
+		}
+
+		// Build response struct
+		var skillInfos []SkillInfo
+		for _, s := range skills {
+			skillInfos = append(skillInfos, SkillInfo{
+				Name:         s.Name,
+				Version:      s.Version,
+				Description:  s.Description,
+				Tags:         s.Tags,
+				AllowedTools: s.AllowedTools,
+				SourceName:   s.SourceName,
+			})
 		}
 
 		if len(skills) == 0 {
@@ -2556,7 +2620,7 @@ func registerMCPTools(server *mcp.Server) {
 			responseText += "- Or add `skillsets/` directories to your agent sources\n"
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-			}, nil, nil
+			}, &ListSkillsResponse{Skills: skillInfos}, nil
 		}
 
 		// Group skills by source for cleaner output
@@ -2599,7 +2663,7 @@ func registerMCPTools(server *mcp.Server) {
 
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-		}, skills, nil
+		}, &ListSkillsResponse{Skills: skillInfos}, nil
 	})
 
 	// Register list_skillsets tool
@@ -2607,10 +2671,23 @@ func registerMCPTools(server *mcp.Server) {
 		Name: "list_skillsets",
 		Description: "List all available skillsets (collections of related skills). " +
 			"Skillsets group skills that work together, like react-tailwind or react-mui.",
-	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct{}) (*mcp.CallToolResult, any, error) {
+	}, func(ctx context.Context, req *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
 		skillsets, err := loadAllSkillsets()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to load skillsets: %w", err)
+		}
+
+		// Build response struct
+		var skillsetInfos []SkillsetInfo
+		for _, ss := range skillsets {
+			skillsetInfos = append(skillsetInfos, SkillsetInfo{
+				Name:        ss.Name,
+				Version:     ss.Version,
+				Description: ss.Description,
+				Tags:        ss.Tags,
+				SkillCount:  ss.SkillCount(),
+				SourceName:  ss.SourceName,
+			})
 		}
 
 		if len(skillsets) == 0 {
@@ -2621,7 +2698,7 @@ func registerMCPTools(server *mcp.Server) {
 			responseText += "- Or add `skillsets/` directories to your agent sources\n"
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-			}, nil, nil
+			}, &ListSkillsetsResponse{Skillsets: skillsetInfos}, nil
 		}
 
 		// Group skillsets by source for cleaner output
@@ -2661,7 +2738,7 @@ func registerMCPTools(server *mcp.Server) {
 
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-		}, skillsets, nil
+		}, &ListSkillsetsResponse{Skillsets: skillsetInfos}, nil
 	})
 
 	// Register deploy_skills tool
@@ -2711,13 +2788,28 @@ func registerMCPTools(server *mcp.Server) {
 			log.Printf("Warning: failed to update manifests: %v", err)
 		}
 
+		// Build response struct
+		var deployResults []DeploySkillResult
+		successCount := 0
+		for _, r := range results {
+			status := "failed"
+			if r.Success {
+				status = "success"
+				successCount++
+			}
+			deployResults = append(deployResults, DeploySkillResult{
+				Name:    r.SkillName,
+				Version: "", // Version info not in result
+				Status:  status,
+				Message: r.Message,
+			})
+		}
+
 		// Format response
 		responseText := "# Skill Deployment Results\n\n"
 
-		successCount := 0
 		for _, r := range results {
 			if r.Success {
-				successCount++
 				responseText += fmt.Sprintf("✓ **%s** - %s\n", r.SkillName, r.Message)
 				if r.LinkedAgent != "" {
 					responseText += fmt.Sprintf("  └─ Linked to agent: %s\n", r.LinkedAgent)
@@ -2732,7 +2824,7 @@ func registerMCPTools(server *mcp.Server) {
 
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-		}, results, nil
+		}, &DeploySkillsResponse{TargetPath: args.TargetPath, Results: deployResults}, nil
 	})
 
 	// Register scan_deployed_skills tool
@@ -2759,13 +2851,24 @@ func registerMCPTools(server *mcp.Server) {
 			return nil, nil, fmt.Errorf("failed to scan skills: %w", err)
 		}
 
+		// Build response struct
+		var statusInfos []DeployedSkillStatus
+		for _, r := range results {
+			statusInfos = append(statusInfos, DeployedSkillStatus{
+				Name:             r.Name,
+				Version:          r.DeployedVersion,
+				Status:           r.Status,
+				AvailableVersion: r.AvailableVersion,
+			})
+		}
+
 		if len(results) == 0 {
 			responseText := "# Deployed Skills\n\n"
 			responseText += "No skills deployed to this project.\n\n"
 			responseText += fmt.Sprintf("**Checked:** %s/.claude/skills/\n", args.TargetPath)
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-			}, results, nil
+			}, &ScanDeployedSkillsResponse{TargetPath: args.TargetPath, Statuses: statusInfos}, nil
 		}
 
 		// Format response
@@ -2818,7 +2921,7 @@ func registerMCPTools(server *mcp.Server) {
 
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-		}, results, nil
+		}, &ScanDeployedSkillsResponse{TargetPath: args.TargetPath, Statuses: statusInfos}, nil
 	})
 
 	// Register add_skill_source tool
