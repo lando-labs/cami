@@ -2556,7 +2556,7 @@ func registerMCPTools(server *mcp.Server) {
 			responseText += "- Or add `skillsets/` directories to your agent sources\n"
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-			}, []any{}, nil
+			}, nil, nil
 		}
 
 		// Group skills by source for cleaner output
@@ -2621,7 +2621,7 @@ func registerMCPTools(server *mcp.Server) {
 			responseText += "- Or add `skillsets/` directories to your agent sources\n"
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-			}, []any{}, nil
+			}, nil, nil
 		}
 
 		// Group skillsets by source for cleaner output
