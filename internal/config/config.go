@@ -15,7 +15,7 @@ type Config struct {
 	InstallTimestamp   time.Time        `yaml:"install_timestamp,omitempty"` // When CAMI was installed
 	SetupComplete      bool             `yaml:"setup_complete,omitempty"`    // Whether initial setup is complete
 	AgentSources       []AgentSource    `yaml:"agent_sources"`
-	SkillSources       []SkillSource    `yaml:"skill_sources,omitempty"`        // NEW: Sources for skills/skillsets
+	SkillSources       []SkillSource    `yaml:"skill_sources,omitempty"` // NEW: Sources for skills/skillsets
 	Locations          []DeployLocation `yaml:"deploy_locations"`
 	DefaultProjectsDir string           `yaml:"default_projects_dir,omitempty"` // Where new projects are created by default
 }

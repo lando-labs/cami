@@ -47,8 +47,8 @@ type DeployedSkill struct {
 	SourcePath   string    `yaml:"source_path"`             // Full path to source directory
 	Priority     int       `yaml:"priority"`
 	DeployedAt   time.Time `yaml:"deployed_at"`
-	ContentHash  string    `yaml:"content_hash"` // SHA256 of SKILL.md content
-	FileCount    int       `yaml:"file_count"`   // Total files deployed (SKILL.md + support files)
+	ContentHash  string    `yaml:"content_hash"`            // SHA256 of SKILL.md content
+	FileCount    int       `yaml:"file_count"`              // Total files deployed (SKILL.md + support files)
 	LinkedAgents []string  `yaml:"linked_agents,omitempty"` // Agents this skill is paired with
 	Origin       string    `yaml:"origin,omitempty"`        // "cami", "external", "manual"
 }

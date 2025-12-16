@@ -2925,12 +2925,12 @@ func registerMCPTools(server *mcp.Server) {
 		responseText += fmt.Sprintf("- Git: %s\n", args.URL)
 
 		return &mcp.CallToolResult{
-			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
-		}, map[string]any{
-			"name":        name,
-			"path":        targetPath,
-			"skill_count": len(skills),
-		}, nil
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, map[string]any{
+				"name":        name,
+				"path":        targetPath,
+				"skill_count": len(skills),
+			}, nil
 	})
 
 	// Register recommend_skills tool
@@ -2941,8 +2941,8 @@ func registerMCPTools(server *mcp.Server) {
 			"Use this to suggest skills when deploying agents.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
 		ProjectPath string   `json:"project_path"`
-		AgentName   string   `json:"agent_name"`   // Optional: recommend for specific agent
-		TechStack   []string `json:"tech_stack"`   // Optional: override with explicit tech stack
+		AgentName   string   `json:"agent_name"` // Optional: recommend for specific agent
+		TechStack   []string `json:"tech_stack"` // Optional: override with explicit tech stack
 	}) (*mcp.CallToolResult, any, error) {
 		if args.ProjectPath == "" {
 			return nil, nil, fmt.Errorf("project_path is required")

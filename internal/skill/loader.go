@@ -360,4 +360,3 @@ func FilterSkillsByTags(skills []*Skill, tags []string) []*Skill {
 
 	return filtered
 }
-

@@ -23,11 +23,11 @@ type SkillDeployResult struct {
 
 // DeploySkillsOptions contains options for skill deployment
 type DeploySkillsOptions struct {
-	SkillNames    []string // Specific skills to deploy
-	SkillsetName  string   // Deploy all skills from a skillset (alternative)
-	TargetPath    string   // Project directory
-	Overwrite     bool     // Overwrite existing skills
-	LinkToAgent   string   // Optional: link skills to an agent
+	SkillNames      []string       // Specific skills to deploy
+	SkillsetName    string         // Deploy all skills from a skillset (alternative)
+	TargetPath      string         // Project directory
+	Overwrite       bool           // Overwrite existing skills
+	LinkToAgent     string         // Optional: link skills to an agent
 	AvailableSkills []*skill.Skill // Pre-loaded skills to deploy from
 }
 
