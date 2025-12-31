@@ -37,17 +37,18 @@ Locations are stored in your CAMI workspace config.yaml and can be used for depl
 	return cmd
 }
 
-// NewLocationCommand creates the location command with add/remove subcommands
+// NewLocationCommand creates the location command with add/remove/update subcommands
 func NewLocationCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "location",
 		Short: "Manage deployment locations",
 		Long: `Manage deployment locations for agent deployment.
-Use subcommands to add or remove deployment locations.`,
+Use subcommands to add, remove, or update deployment locations.`,
 	}
 
 	cmd.AddCommand(NewLocationAddCommand())
 	cmd.AddCommand(NewLocationRemoveCommand())
+	cmd.AddCommand(NewLocationUpdateCommand())
 
 	return cmd
 }
@@ -242,6 +243,151 @@ func runRemoveLocation(name string) error {
 	}
 
 	fmt.Printf("Successfully removed location '%s'\n", name)
+
+	return nil
+}
+
+// NewLocationUpdateCommand creates the location update subcommand
+func NewLocationUpdateCommand() *cobra.Command {
+	var (
+		currentName string
+		newName     string
+		newPath     string
+		renameDir   bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "update",
+		Short: "Update a deployment location's name or path",
+		Long: `Update a deployment location's name or path.
+
+SAFE OPERATIONS:
+  --new-name    Rename the friendly name only (config.yaml only)
+  --new-path    Update path after manually moving directory
+
+POTENTIALLY BREAKING:
+  --rename-dir  Actually rename the directory on disk
+                WARNING: This may break IDE projects, shell aliases,
+                CI/CD configs, or scripts referencing the old path.
+
+Examples:
+  # Just rename the friendly name (safe)
+  cami location update -c my-app --new-name my-awesome-app
+
+  # Update path after manually moving directory
+  cami location update -c my-app --new-path /new/location/my-app
+
+  # Rename directory on disk (use with caution)
+  cami location update -c my-app --new-name my-awesome-app --rename-dir`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runUpdateLocation(currentName, newName, newPath, renameDir)
+		},
+	}
+
+	cmd.Flags().StringVarP(&currentName, "current", "c", "", "Current name of the location (required)")
+	cmd.Flags().StringVar(&newName, "new-name", "", "New friendly name for the location")
+	cmd.Flags().StringVar(&newPath, "new-path", "", "New path (use after manually moving directory)")
+	cmd.Flags().BoolVar(&renameDir, "rename-dir", false, "Rename directory on disk (CAUTION: may break external tools)")
+
+	cmd.MarkFlagRequired("current")
+
+	return cmd
+}
+
+func runUpdateLocation(currentName, newName, newPath string, renameDir bool) error {
+	if currentName == "" {
+		return fmt.Errorf("current location name cannot be empty")
+	}
+
+	if newName == "" && newPath == "" && !renameDir {
+		return fmt.Errorf("at least one of --new-name, --new-path, or --rename-dir must be specified")
+	}
+
+	if renameDir && newName == "" {
+		return fmt.Errorf("--new-name is required when using --rename-dir")
+	}
+
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	// Get current location
+	currentLoc, err := cfg.GetDeployLocation(currentName)
+	if err != nil {
+		return err
+	}
+
+	oldPath := currentLoc.Path
+	actualNewPath := newPath
+
+	// Handle directory rename on disk
+	if renameDir {
+		// Construct new path by replacing the last directory component
+		parentDir := filepath.Dir(currentLoc.Path)
+		actualNewPath = filepath.Join(parentDir, newName)
+
+		// Check if source exists
+		if _, err := os.Stat(currentLoc.Path); os.IsNotExist(err) {
+			return fmt.Errorf("current directory does not exist: %s", currentLoc.Path)
+		}
+
+		// Check if destination already exists
+		if _, err := os.Stat(actualNewPath); err == nil {
+			return fmt.Errorf("destination directory already exists: %s", actualNewPath)
+		}
+
+		// Warn user
+		fmt.Println("⚠️  WARNING: Renaming directory on disk")
+		fmt.Printf("   From: %s\n", currentLoc.Path)
+		fmt.Printf("   To:   %s\n", actualNewPath)
+		fmt.Println("\nThis may break:")
+		fmt.Println("  - IDE project settings")
+		fmt.Println("  - Shell aliases or bookmarks")
+		fmt.Println("  - CI/CD configurations")
+		fmt.Println("  - Scripts referencing the old path")
+		fmt.Println()
+
+		// Perform the rename
+		if err := os.Rename(currentLoc.Path, actualNewPath); err != nil {
+			return fmt.Errorf("failed to rename directory: %w", err)
+		}
+
+		fmt.Printf("✓ Directory renamed: %s → %s\n", currentLoc.Path, actualNewPath)
+	}
+
+	// Validate new path exists (if provided and not just renamed)
+	if actualNewPath != "" && !renameDir {
+		if _, err := os.Stat(actualNewPath); os.IsNotExist(err) {
+			return fmt.Errorf("new path does not exist: %s\n  Use --rename-dir to rename the directory on disk", actualNewPath)
+		}
+	}
+
+	// Update config
+	_, err = cfg.UpdateDeployLocation(currentName, newName, actualNewPath)
+	if err != nil {
+		// If we renamed the directory but config update failed, try to rename back
+		if renameDir && actualNewPath != "" {
+			_ = os.Rename(actualNewPath, currentLoc.Path)
+			fmt.Println("⚠️  Config update failed, reverted directory rename")
+		}
+		return fmt.Errorf("failed to update location: %w", err)
+	}
+
+	// Save configuration
+	if err := cfg.Save(); err != nil {
+		return fmt.Errorf("failed to save configuration: %w", err)
+	}
+
+	// Print summary
+	if newName != "" {
+		fmt.Printf("✓ Name updated: %s → %s\n", currentName, newName)
+	}
+	if actualNewPath != "" && actualNewPath != oldPath {
+		fmt.Printf("✓ Path updated: %s → %s\n", oldPath, actualNewPath)
+	}
+	fmt.Println("✓ Configuration saved")
 
 	return nil
 }
