@@ -4,7 +4,6 @@ set -e
 # CAMI Installation Script
 # This script installs CAMI and creates the user workspace
 
-VERSION="0.4.0"
 INSTALL_DIR="${CAMI_DIR:-$HOME/cami-workspace}"
 BIN_DIR="${BIN_DIR:-/usr/local/bin}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,23 +39,15 @@ detect_arch() {
     esac
 }
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  CAMI Installation v$VERSION"
-echo "  Claude Agent Management Interface"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-
-# Detect platform
+# Detect platform first (needed for binary name)
 OS=$(detect_os)
 ARCH=$(detect_arch)
 
 if [ "$OS" = "unknown" ] || [ "$ARCH" = "unknown" ]; then
-    print_error "Unsupported platform: OS=$OS, ARCH=$ARCH"
+    echo -e "${RED}✗${NC} Unsupported platform: OS=$OS, ARCH=$ARCH"
     echo "Supported platforms: macOS (amd64/arm64), Linux (amd64/arm64), Windows (amd64/arm64)"
     exit 1
 fi
-
-print_info "Detected platform: $OS/$ARCH"
 
 # Check if binary exists in script directory
 BINARY_NAME="cami"
@@ -66,14 +57,48 @@ fi
 
 # Look for binary (either in current dir during build or in releases)
 BINARY_PATH=""
-if [ -f "$SCRIPT_DIR/../cami" ]; then
-    BINARY_PATH="$(cd "$SCRIPT_DIR/.." && pwd)/cami"
-elif [ -f "$SCRIPT_DIR/cami" ]; then
-    BINARY_PATH="$(cd "$SCRIPT_DIR" && pwd)/cami"
+if [ -f "$SCRIPT_DIR/../$BINARY_NAME" ]; then
+    BINARY_PATH="$(cd "$SCRIPT_DIR/.." && pwd)/$BINARY_NAME"
+elif [ -f "$SCRIPT_DIR/$BINARY_NAME" ]; then
+    BINARY_PATH="$(cd "$SCRIPT_DIR" && pwd)/$BINARY_NAME"
 else
-    print_error "CAMI binary not found. Please run 'make build' first or download a release."
+    echo -e "${RED}✗${NC} CAMI binary not found. Please run 'make build' first or download a release."
     exit 1
 fi
+
+# Get version from the binary itself (single source of truth)
+VERSION=$("$BINARY_PATH" --version 2>/dev/null | head -1 | sed 's/CAMI v//')
+
+# Validate version - must be a proper version string, not "dev"
+if [ -z "$VERSION" ]; then
+    echo -e "${RED}✗${NC} Failed to get version from binary"
+    echo "The binary at $BINARY_PATH did not return a valid version."
+    exit 1
+fi
+
+if [ "$VERSION" = "dev" ]; then
+    echo -e "${YELLOW}⚠${NC}  Development build detected (version: dev)"
+    echo ""
+    echo "This binary was built without a version tag. For production installs,"
+    echo "please use an official release from:"
+    echo "  https://github.com/lando-labs/cami/releases"
+    echo ""
+    read -p "Continue with development build? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${RED}✗${NC} Installation cancelled"
+        exit 1
+    fi
+    echo ""
+fi
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  CAMI Installation v$VERSION"
+echo "  Claude Agent Management Interface"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+print_info "Detected platform: $OS/$ARCH"
 
 echo ""
 print_info "Workspace directory: $INSTALL_DIR"
@@ -98,11 +123,13 @@ if [ -d "$INSTALL_DIR" ]; then
     echo "This will update:"
     echo "  ✓ Bundled agents (.claude/agents/agent-architect.md)"
     echo "  ✓ Template files (CLAUDE.md, README.md, .mcp.json, .gitignore)"
+    echo "  ✓ Claude settings (if using default CAMI settings)"
     echo ""
     echo "This will NOT touch:"
     echo "  ✗ config.yaml"
     echo "  ✗ sources/my-agents/"
     echo "  ✗ Your agent sources"
+    echo "  ✗ Custom Claude settings (if modified)"
     echo ""
     print_info "⚠️  If you've customized CLAUDE.md, back it up first!"
     echo ""
@@ -148,6 +175,7 @@ if [ "$IS_UPGRADE" = true ]; then
     # Backup user-modifiable files
     [ -f "$INSTALL_DIR/CLAUDE.md" ] && cp "$INSTALL_DIR/CLAUDE.md" "$BACKUP_DIR/"
     [ -f "$INSTALL_DIR/.claude/agents/agent-architect.md" ] && cp "$INSTALL_DIR/.claude/agents/agent-architect.md" "$BACKUP_DIR/"
+    [ -f "$INSTALL_DIR/.claude/settings.json" ] && cp "$INSTALL_DIR/.claude/settings.json" "$BACKUP_DIR/"
 
     print_info "Backed up existing files to $BACKUP_DIR"
 fi
@@ -158,8 +186,25 @@ cp "$TEMPLATE_DIR/.gitignore" "$INSTALL_DIR/"
 cp "$TEMPLATE_DIR/.mcp.json" "$INSTALL_DIR/"
 
 # Deploy agent-architect (the only bundled agent)
-print_info "Deploying agent-architect v4.0.0..."
+print_info "Deploying agent-architect v4.1.0..."
 cp "$TEMPLATE_DIR/agent-architect.md" "$INSTALL_DIR/.claude/agents/"
+
+# Deploy settings.json with SessionStart hook for reconciliation
+if [ ! -f "$INSTALL_DIR/.claude/settings.json" ]; then
+    cp "$TEMPLATE_DIR/.claude/settings.json" "$INSTALL_DIR/.claude/"
+    print_success "Installed .claude/settings.json with SessionStart hook"
+else
+    # Only update if it's our default template (check for reconcile hook)
+    if grep -q "cami source reconcile" "$INSTALL_DIR/.claude/settings.json" 2>/dev/null; then
+        if [ "$IS_UPGRADE" = true ]; then
+            cp "$INSTALL_DIR/.claude/settings.json" "$BACKUP_DIR/" 2>/dev/null || true
+        fi
+        cp "$TEMPLATE_DIR/.claude/settings.json" "$INSTALL_DIR/.claude/"
+        print_success "Updated .claude/settings.json"
+    else
+        print_info "Skipping .claude/settings.json (custom configuration detected)"
+    fi
+fi
 
 # Copy templates to my-agents source (only if they don't exist)
 if [ ! -f "$INSTALL_DIR/sources/my-agents/.camiignore" ]; then

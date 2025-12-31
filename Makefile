@@ -8,7 +8,7 @@ INSTALL_DIR=$(HOME)/cami
 BIN_DIR=/usr/local/bin
 
 # Go build flags
-LDFLAGS=-ldflags "-X main.Version=$(VERSION)"
+LDFLAGS=-ldflags "-X main.version=$(VERSION)"
 
 help: ## Show this help message
 	@echo "CAMI Makefile"
@@ -25,7 +25,7 @@ build: ## Build CAMI binary for current platform
 
 install: build ## Build and install CAMI locally
 	@echo "Installing CAMI..."
-	./install/install.sh
+	@bash ./install/install.sh
 	@echo "✓ Installation complete!"
 
 clean: ## Remove build artifacts
