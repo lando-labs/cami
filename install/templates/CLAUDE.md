@@ -406,7 +406,14 @@ The included `.gitignore` is configured to:
 
 ## CLI Commands
 
-CAMI also provides CLI commands that work from anywhere:
+CAMI also provides CLI commands. To use them from any directory, add `~/.local/bin` to your PATH:
+
+```bash
+# Add to ~/.zshrc or ~/.bashrc
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then these commands work from anywhere:
 
 ```bash
 # Agent management

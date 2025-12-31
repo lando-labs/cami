@@ -1,0 +1,14 @@
+version: "1"
+state: cami-native
+normalized_at: 2025-12-01T11:53:37.654222-06:00
+agents:
+    - name: skill-architect
+      version: 1.0.0
+      source: my-agents
+      source_path: /Users/lando/cami-workspace/sources/my-agents/skill-architect.md
+      priority: 10
+      deployed_at: 2025-12-01T11:53:37.654222-06:00
+      content_hash: sha256:feebc44d2df9e03d83a0cb2903878738e06cbf928b9138342d78ee6f40f6065e
+      metadata_hash: sha256:902900171f05a51b27668b89310e632b7ec25581e43bb12c80ffd8163b413577
+      custom_override: false
+      origin: cami

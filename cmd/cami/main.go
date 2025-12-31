@@ -16,9 +16,11 @@ import (
 	"github.com/lando/cami/internal/cli"
 	"github.com/lando/cami/internal/config"
 	"github.com/lando/cami/internal/deploy"
+	"github.com/lando/cami/internal/discovery"
 	"github.com/lando/cami/internal/docs"
 	"github.com/lando/cami/internal/manifest"
 	"github.com/lando/cami/internal/normalize"
+	"github.com/lando/cami/internal/skill"
 	"github.com/lando/cami/internal/tui"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -102,6 +104,79 @@ func loadAllAgents() ([]*agent.Agent, error) {
 	}
 
 	return agent.LoadAgentsFromSources(agentSources)
+}
+
+// loadAllSkills loads skills from all configured skill sources
+func loadAllSkills() ([]*skill.Skill, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Convert config sources to skill sources
+	skillSources := make([]skill.SkillSource, len(cfg.SkillSources))
+	for i, src := range cfg.SkillSources {
+		skillSources[i] = skill.SkillSource{
+			Name:     src.Name,
+			Path:     src.Path,
+			Priority: src.Priority,
+		}
+	}
+
+	// Also check agent sources for skillsets/ directories
+	for _, src := range cfg.AgentSources {
+		skillsetDir := filepath.Join(src.Path, "skillsets")
+		if _, err := os.Stat(skillsetDir); err == nil {
+			// Agent source has skillsets directory - add it as a skill source
+			skillSources = append(skillSources, skill.SkillSource{
+				Name:     src.Name + "-skills",
+				Path:     skillsetDir,
+				Priority: src.Priority,
+			})
+		}
+	}
+
+	if len(skillSources) == 0 {
+		return []*skill.Skill{}, nil // No skill sources configured, return empty list
+	}
+
+	return skill.LoadSkillsFromSources(skillSources)
+}
+
+// loadAllSkillsets loads skillsets from all configured sources
+func loadAllSkillsets() ([]*skill.Skillset, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Convert config sources to skill sources
+	skillSources := make([]skill.SkillSource, len(cfg.SkillSources))
+	for i, src := range cfg.SkillSources {
+		skillSources[i] = skill.SkillSource{
+			Name:     src.Name,
+			Path:     src.Path,
+			Priority: src.Priority,
+		}
+	}
+
+	// Also check agent sources for skillsets/ directories
+	for _, src := range cfg.AgentSources {
+		skillsetDir := filepath.Join(src.Path, "skillsets")
+		if _, err := os.Stat(skillsetDir); err == nil {
+			skillSources = append(skillSources, skill.SkillSource{
+				Name:     src.Name + "-skills",
+				Path:     skillsetDir,
+				Priority: src.Priority,
+			})
+		}
+	}
+
+	if len(skillSources) == 0 {
+		return []*skill.Skillset{}, nil
+	}
+
+	return skill.LoadSkillsetsFromSources(skillSources)
 }
 
 // updateDeploymentManifests updates both project and central manifests after deployment
@@ -266,9 +341,11 @@ func runCLI() {
 // MCP type definitions
 
 type DeployAgentsArgs struct {
-	AgentNames []string `json:"agent_names" jsonschema_description:"Array of agent names to deploy (e.g. ['architect', 'backend'])"`
-	TargetPath string   `json:"target_path" jsonschema_description:"Absolute path to target project directory"`
-	Overwrite  bool     `json:"overwrite,omitempty" jsonschema_description:"Whether to overwrite existing agent files (default: false)"`
+	AgentNames    []string `json:"agent_names" jsonschema_description:"Array of agent names to deploy (e.g. ['architect', 'backend'])"`
+	TargetPath    string   `json:"target_path" jsonschema_description:"Absolute path to target project directory"`
+	Overwrite     bool     `json:"overwrite,omitempty" jsonschema_description:"Whether to overwrite existing agent files (default: false)"`
+	WithSkills    []string `json:"with_skills,omitempty" jsonschema_description:"Optional: skill names to deploy alongside agents"`
+	SuggestSkills bool     `json:"suggest_skills,omitempty" jsonschema_description:"Optional: suggest skills based on STRATEGIES.yaml tech stack (default: false)"`
 }
 
 type UpdateClaudeMdArgs struct {
@@ -410,6 +487,57 @@ type ImportAgentsResponse struct {
 	DryRun         bool            `json:"dry_run"`
 }
 
+// Skill response types
+type SkillInfo struct {
+	Name         string   `json:"name"`
+	Version      string   `json:"version"`
+	Description  string   `json:"description"`
+	Tags         []string `json:"tags,omitempty"`
+	AllowedTools []string `json:"allowed_tools,omitempty"`
+	SourceName   string   `json:"source_name"`
+}
+
+type ListSkillsResponse struct {
+	Skills []SkillInfo `json:"skills"`
+}
+
+type SkillsetInfo struct {
+	Name        string   `json:"name"`
+	Version     string   `json:"version"`
+	Description string   `json:"description"`
+	Tags        []string `json:"tags,omitempty"`
+	SkillCount  int      `json:"skill_count"`
+	SourceName  string   `json:"source_name"`
+}
+
+type ListSkillsetsResponse struct {
+	Skillsets []SkillsetInfo `json:"skillsets"`
+}
+
+type DeploySkillsResponse struct {
+	TargetPath string              `json:"target_path"`
+	Results    []DeploySkillResult `json:"results"`
+}
+
+type DeploySkillResult struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+}
+
+type ScanDeployedSkillsResponse struct {
+	TargetPath string                `json:"target_path"`
+	Statuses   []DeployedSkillStatus `json:"statuses"`
+}
+
+type DeployedSkillStatus struct {
+	Name             string `json:"name"`
+	Version          string `json:"version"`
+	Status           string `json:"status"`
+	AvailableVersion string `json:"available_version,omitempty"`
+}
+
 func runMCPServer() {
 	// Initialize logger to stderr
 	log.SetOutput(os.Stderr)
@@ -449,7 +577,9 @@ func registerMCPTools(server *mcp.Server) {
 		Name: "deploy_agents",
 		Description: "Deploy selected agents to a target project's .claude/agents/ directory. " +
 			"Use this when the user wants to add specific agents to a project. " +
-			"Handles conflict detection and creates necessary directories.",
+			"Handles conflict detection and creates necessary directories. " +
+			"Optionally deploy skills alongside agents using with_skills parameter. " +
+			"Use suggest_skills=true to get STRATEGIES.yaml-based skill recommendations.",
 	}, func(ctx context.Context, req *mcp.CallToolRequest, args DeployAgentsArgs) (*mcp.CallToolResult, any, error) {
 		// Validate target path
 		if err := deploy.ValidateTargetPath(args.TargetPath); err != nil {
@@ -506,13 +636,125 @@ func registerMCPTools(server *mcp.Server) {
 		}
 
 		// Format response
-		responseText := fmt.Sprintf("Deployed %d agents to %s\n\n", len(agentsToDeploy), args.TargetPath)
+		responseText := fmt.Sprintf("# Agent Deployment Results\n\n")
+		responseText += fmt.Sprintf("**Target:** %s\n\n", args.TargetPath)
+
+		responseText += "## Agents\n\n"
 		for _, result := range deployResults {
 			status := "✓"
 			if !result.Success {
 				status = "✗"
 			}
-			responseText += fmt.Sprintf("%s %s: %s\n", status, result.AgentName, result.Message)
+			responseText += fmt.Sprintf("%s **%s**: %s\n", status, result.AgentName, result.Message)
+		}
+
+		// Handle skills if requested
+		var skillResults []deploy.SkillDeployResult
+		var suggestedSkills []*skill.Skillset
+
+		if len(args.WithSkills) > 0 {
+			// Deploy explicitly requested skills
+			availableSkills, err := loadAllSkills()
+			if err != nil {
+				log.Printf("Warning: failed to load skills: %v", err)
+			} else {
+				opts := deploy.DeploySkillsOptions{
+					SkillNames:      args.WithSkills,
+					TargetPath:      args.TargetPath,
+					Overwrite:       args.Overwrite,
+					AvailableSkills: availableSkills,
+				}
+
+				skillResults, err = deploy.DeploySkills(opts)
+				if err != nil {
+					log.Printf("Warning: skill deployment failed: %v", err)
+				} else {
+					// Update skill manifests
+					if err := updateSkillDeploymentManifests(args.TargetPath, availableSkills, skillResults); err != nil {
+						log.Printf("Warning: failed to update skill manifests: %v", err)
+					}
+
+					responseText += "\n## Skills\n\n"
+					for _, r := range skillResults {
+						status := "✓"
+						if !r.Success {
+							status = "✗"
+						}
+						responseText += fmt.Sprintf("%s **%s**: %s\n", status, r.SkillName, r.Message)
+					}
+				}
+			}
+		} else if args.SuggestSkills {
+			// Suggest skills based on STRATEGIES.yaml
+			skillsets, err := loadAllSkillsets()
+			if err == nil {
+				// Try to load tech stack from STRATEGIES.yaml
+				strategiesPath := filepath.Join(args.TargetPath, "STRATEGIES.yaml")
+				if data, err := os.ReadFile(strategiesPath); err == nil {
+					var techStack []string
+					lines := strings.Split(string(data), "\n")
+					inTechStack := false
+					for _, line := range lines {
+						if strings.Contains(line, "tech_stack:") {
+							inTechStack = true
+							continue
+						}
+						if inTechStack {
+							if strings.HasPrefix(strings.TrimSpace(line), "- ") {
+								tech := strings.TrimPrefix(strings.TrimSpace(line), "- ")
+								techStack = append(techStack, tech)
+							} else if !strings.HasPrefix(line, " ") && line != "" {
+								break
+							}
+						}
+					}
+
+					if len(techStack) > 0 {
+						for _, ss := range skillsets {
+							if ss.MatchesTechStack(techStack) {
+								suggestedSkills = append(suggestedSkills, ss)
+							}
+						}
+
+						if len(suggestedSkills) > 0 {
+							responseText += "\n## Suggested Skills\n\n"
+							responseText += fmt.Sprintf("Based on your STRATEGIES.yaml tech stack (%s):\n\n", strings.Join(techStack, ", "))
+							for _, ss := range suggestedSkills {
+								responseText += fmt.Sprintf("- **%s**", ss.Name)
+								if ss.Version != "" {
+									responseText += fmt.Sprintf(" (v%s)", ss.Version)
+								}
+								if ss.Description != "" {
+									responseText += fmt.Sprintf(" - %s", ss.Description)
+								}
+								responseText += "\n"
+							}
+							responseText += "\nTo deploy these skills, use `deploy_skills` or include them via `with_skills` parameter.\n"
+						}
+					}
+				}
+			}
+		}
+
+		// Summary
+		agentSuccessCount := 0
+		for _, r := range deployResults {
+			if r.Success {
+				agentSuccessCount++
+			}
+		}
+
+		skillSuccessCount := 0
+		for _, r := range skillResults {
+			if r.Success {
+				skillSuccessCount++
+			}
+		}
+
+		responseText += "\n---\n"
+		responseText += fmt.Sprintf("**Agents:** %d/%d deployed\n", agentSuccessCount, len(deployResults))
+		if len(skillResults) > 0 {
+			responseText += fmt.Sprintf("**Skills:** %d/%d deployed\n", skillSuccessCount, len(skillResults))
 		}
 
 		return &mcp.CallToolResult{
@@ -2343,6 +2585,661 @@ func registerMCPTools(server *mcp.Server) {
 			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
 		}, result, nil
 	})
+
+	// ========== SKILL MCP TOOLS ==========
+
+	// Register list_skills tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "list_skills",
+		Description: "List all available skills from configured skill sources. " +
+			"Skills are implementation containers with code patterns and framework conventions.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
+		skills, err := loadAllSkills()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load skills: %w", err)
+		}
+
+		// Build response struct
+		var skillInfos []SkillInfo
+		for _, s := range skills {
+			skillInfos = append(skillInfos, SkillInfo{
+				Name:         s.Name,
+				Version:      s.Version,
+				Description:  s.Description,
+				Tags:         s.Tags,
+				AllowedTools: s.AllowedTools,
+				SourceName:   s.SourceName,
+			})
+		}
+
+		if len(skills) == 0 {
+			responseText := "# Available Skills\n\n"
+			responseText += "No skills available.\n\n"
+			responseText += "**To add skills:**\n"
+			responseText += "- Add `skill_sources` to your config.yaml\n"
+			responseText += "- Or add `skillsets/` directories to your agent sources\n"
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, &ListSkillsResponse{Skills: skillInfos}, nil
+		}
+
+		// Group skills by source for cleaner output
+		skillsBySource := make(map[string][]*skill.Skill)
+		for _, s := range skills {
+			source := s.SourceName
+			if source == "" {
+				source = "unknown"
+			}
+			skillsBySource[source] = append(skillsBySource[source], s)
+		}
+
+		// Format response
+		responseText := fmt.Sprintf("# Available Skills (%d)\n\n", len(skills))
+
+		for source, sourceSkills := range skillsBySource {
+			responseText += fmt.Sprintf("## %s\n\n", source)
+			for _, s := range sourceSkills {
+				responseText += fmt.Sprintf("### %s", s.Name)
+				if s.Version != "" {
+					responseText += fmt.Sprintf(" (v%s)", s.Version)
+				}
+				responseText += "\n"
+
+				if s.Description != "" {
+					responseText += fmt.Sprintf("%s\n", s.Description)
+				}
+
+				if len(s.Tags) > 0 {
+					responseText += fmt.Sprintf("**Tags:** %s\n", strings.Join(s.Tags, ", "))
+				}
+
+				if len(s.AllowedTools) > 0 {
+					responseText += fmt.Sprintf("**Allowed Tools:** %s\n", strings.Join(s.AllowedTools, ", "))
+				}
+
+				responseText += "\n"
+			}
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, &ListSkillsResponse{Skills: skillInfos}, nil
+	})
+
+	// Register list_skillsets tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "list_skillsets",
+		Description: "List all available skillsets (collections of related skills). " +
+			"Skillsets group skills that work together, like react-tailwind or react-mui.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
+		skillsets, err := loadAllSkillsets()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load skillsets: %w", err)
+		}
+
+		// Build response struct
+		var skillsetInfos []SkillsetInfo
+		for _, ss := range skillsets {
+			skillsetInfos = append(skillsetInfos, SkillsetInfo{
+				Name:        ss.Name,
+				Version:     ss.Version,
+				Description: ss.Description,
+				Tags:        ss.Tags,
+				SkillCount:  ss.SkillCount(),
+				SourceName:  ss.SourceName,
+			})
+		}
+
+		if len(skillsets) == 0 {
+			responseText := "# Available Skillsets\n\n"
+			responseText += "No skillsets available.\n\n"
+			responseText += "**To add skillsets:**\n"
+			responseText += "- Add `skill_sources` to your config.yaml\n"
+			responseText += "- Or add `skillsets/` directories to your agent sources\n"
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, &ListSkillsetsResponse{Skillsets: skillsetInfos}, nil
+		}
+
+		// Group skillsets by source for cleaner output
+		skillsetsBySource := make(map[string][]*skill.Skillset)
+		for _, ss := range skillsets {
+			source := ss.SourceName
+			if source == "" {
+				source = "unknown"
+			}
+			skillsetsBySource[source] = append(skillsetsBySource[source], ss)
+		}
+
+		// Format response
+		responseText := fmt.Sprintf("# Available Skillsets (%d)\n\n", len(skillsets))
+
+		for source, sourceSkillsets := range skillsetsBySource {
+			responseText += fmt.Sprintf("## %s\n\n", source)
+			for _, ss := range sourceSkillsets {
+				responseText += fmt.Sprintf("### %s", ss.Name)
+				if ss.Version != "" {
+					responseText += fmt.Sprintf(" (v%s)", ss.Version)
+				}
+				responseText += "\n"
+
+				if ss.Description != "" {
+					responseText += fmt.Sprintf("%s\n", ss.Description)
+				}
+
+				if len(ss.Tags) > 0 {
+					responseText += fmt.Sprintf("**Tags:** %s\n", strings.Join(ss.Tags, ", "))
+				}
+
+				responseText += fmt.Sprintf("**Skills:** %d | **Support Files:** %d\n", ss.SkillCount(), ss.SupportFileCount())
+				responseText += "\n"
+			}
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, &ListSkillsetsResponse{Skillsets: skillsetInfos}, nil
+	})
+
+	// Register deploy_skills tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "deploy_skills",
+		Description: "Deploy skills to a project's .claude/skills/ directory. " +
+			"Skills provide implementation patterns that Claude Code auto-discovers. " +
+			"Can optionally link skills to specific agents.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		SkillNames  []string `json:"skill_names"`
+		TargetPath  string   `json:"target_path"`
+		Overwrite   bool     `json:"overwrite"`
+		LinkToAgent string   `json:"link_to_agent"` // Optional: link skills to an agent
+	}) (*mcp.CallToolResult, any, error) {
+		if len(args.SkillNames) == 0 {
+			return nil, nil, fmt.Errorf("skill_names is required")
+		}
+
+		if args.TargetPath == "" {
+			return nil, nil, fmt.Errorf("target_path is required")
+		}
+
+		// Load available skills
+		availableSkills, err := loadAllSkills()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load skills: %w", err)
+		}
+
+		// Deploy skills
+		opts := deploy.DeploySkillsOptions{
+			SkillNames:      args.SkillNames,
+			TargetPath:      args.TargetPath,
+			Overwrite:       args.Overwrite,
+			LinkToAgent:     args.LinkToAgent,
+			AvailableSkills: availableSkills,
+		}
+
+		results, err := deploy.DeploySkills(opts)
+		if err != nil {
+			return nil, nil, fmt.Errorf("deployment failed: %w", err)
+		}
+
+		// Update manifests
+		err = updateSkillDeploymentManifests(args.TargetPath, availableSkills, results)
+		if err != nil {
+			// Log but don't fail - skills are deployed
+			log.Printf("Warning: failed to update manifests: %v", err)
+		}
+
+		// Build response struct
+		var deployResults []DeploySkillResult
+		successCount := 0
+		for _, r := range results {
+			status := "failed"
+			if r.Success {
+				status = "success"
+				successCount++
+			}
+			deployResults = append(deployResults, DeploySkillResult{
+				Name:    r.SkillName,
+				Version: "", // Version info not in result
+				Status:  status,
+				Message: r.Message,
+			})
+		}
+
+		// Format response
+		responseText := "# Skill Deployment Results\n\n"
+
+		for _, r := range results {
+			if r.Success {
+				responseText += fmt.Sprintf("✓ **%s** - %s\n", r.SkillName, r.Message)
+				if r.LinkedAgent != "" {
+					responseText += fmt.Sprintf("  └─ Linked to agent: %s\n", r.LinkedAgent)
+				}
+			} else {
+				responseText += fmt.Sprintf("✗ **%s** - %s\n", r.SkillName, r.Message)
+			}
+		}
+
+		responseText += fmt.Sprintf("\n**Summary:** %d/%d skills deployed successfully\n", successCount, len(results))
+		responseText += fmt.Sprintf("**Location:** %s/.claude/skills/\n", args.TargetPath)
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, &DeploySkillsResponse{TargetPath: args.TargetPath, Results: deployResults}, nil
+	})
+
+	// Register scan_deployed_skills tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "scan_deployed_skills",
+		Description: "Scan a project for deployed skills and compare with available versions. " +
+			"Shows skill status: up-to-date, update-available, or not-in-sources.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		TargetPath string `json:"target_path"`
+	}) (*mcp.CallToolResult, any, error) {
+		if args.TargetPath == "" {
+			return nil, nil, fmt.Errorf("target_path is required")
+		}
+
+		// Load available skills for comparison
+		availableSkills, err := loadAllSkills()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load skills: %w", err)
+		}
+
+		// Scan deployed skills
+		results, err := discovery.ScanDeployedSkills(args.TargetPath, availableSkills)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to scan skills: %w", err)
+		}
+
+		// Build response struct
+		var statusInfos []DeployedSkillStatus
+		for _, r := range results {
+			statusInfos = append(statusInfos, DeployedSkillStatus{
+				Name:             r.Name,
+				Version:          r.DeployedVersion,
+				Status:           r.Status,
+				AvailableVersion: r.AvailableVersion,
+			})
+		}
+
+		if len(results) == 0 {
+			responseText := "# Deployed Skills\n\n"
+			responseText += "No skills deployed to this project.\n\n"
+			responseText += fmt.Sprintf("**Checked:** %s/.claude/skills/\n", args.TargetPath)
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, &ScanDeployedSkillsResponse{TargetPath: args.TargetPath, Statuses: statusInfos}, nil
+		}
+
+		// Format response
+		responseText := fmt.Sprintf("# Deployed Skills (%d)\n\n", len(results))
+
+		upToDate := 0
+		updateAvailable := 0
+		notInSources := 0
+
+		for _, r := range results {
+			statusIcon := "?"
+			switch r.Status {
+			case "up-to-date":
+				statusIcon = "✓"
+				upToDate++
+			case "update-available":
+				statusIcon = "↑"
+				updateAvailable++
+			case "not-in-sources":
+				statusIcon = "?"
+				notInSources++
+			}
+
+			responseText += fmt.Sprintf("%s **%s**", statusIcon, r.Name)
+			if r.DeployedVersion != "" {
+				responseText += fmt.Sprintf(" (v%s)", r.DeployedVersion)
+			}
+			responseText += "\n"
+
+			switch r.Status {
+			case "up-to-date":
+				responseText += "  Status: Up to date\n"
+			case "update-available":
+				responseText += fmt.Sprintf("  Status: Update available (v%s → v%s)\n", r.DeployedVersion, r.AvailableVersion)
+			case "not-in-sources":
+				responseText += "  Status: Not found in sources (custom or external)\n"
+			}
+
+			if r.SkillsetName != "" {
+				responseText += fmt.Sprintf("  Skillset: %s\n", r.SkillsetName)
+			}
+
+			responseText += "\n"
+		}
+
+		responseText += fmt.Sprintf("**Summary:**\n")
+		responseText += fmt.Sprintf("- Up to date: %d\n", upToDate)
+		responseText += fmt.Sprintf("- Updates available: %d\n", updateAvailable)
+		responseText += fmt.Sprintf("- Not in sources: %d\n", notInSources)
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, &ScanDeployedSkillsResponse{TargetPath: args.TargetPath, Statuses: statusInfos}, nil
+	})
+
+	// Register add_skill_source tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "add_skill_source",
+		Description: "Add a new skill source by cloning a Git repository. " +
+			"The repository will be cloned to your CAMI workspace sources/ directory. " +
+			"Use this to add skill libraries or team skill collections.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		URL      string `json:"url"`
+		Name     string `json:"name"`     // Optional: defaults to repo name
+		Priority int    `json:"priority"` // Optional: defaults to 50
+	}) (*mcp.CallToolResult, any, error) {
+		if args.URL == "" {
+			return nil, nil, fmt.Errorf("url is required")
+		}
+
+		// Extract repo name from URL if not provided
+		name := args.Name
+		if name == "" {
+			// Extract from URL (e.g., https://github.com/org/repo.git -> repo)
+			parts := strings.Split(args.URL, "/")
+			if len(parts) > 0 {
+				name = strings.TrimSuffix(parts[len(parts)-1], ".git")
+			}
+		}
+
+		if name == "" {
+			return nil, nil, fmt.Errorf("could not determine source name from URL, please provide name parameter")
+		}
+
+		// Set default priority
+		priority := args.Priority
+		if priority == 0 {
+			priority = 50
+		}
+
+		// Get config directory
+		configDir, err := config.GetConfigDir()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get config directory: %w", err)
+		}
+
+		// Clone to sources directory
+		sourcesDir := filepath.Join(configDir, "sources")
+		if err := os.MkdirAll(sourcesDir, 0755); err != nil {
+			return nil, nil, fmt.Errorf("failed to create sources directory: %w", err)
+		}
+
+		targetPath := filepath.Join(sourcesDir, name)
+
+		// Check if already exists
+		if _, err := os.Stat(targetPath); err == nil {
+			return nil, nil, fmt.Errorf("source '%s' already exists at %s", name, targetPath)
+		}
+
+		// Clone the repository
+		cmd := exec.Command("git", "clone", args.URL, targetPath)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return nil, nil, fmt.Errorf("git clone failed: %w\n%s", err, string(output))
+		}
+
+		// Add to config as skill source
+		cfg, err := config.Load()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load config: %w", err)
+		}
+
+		newSource := config.SkillSource{
+			Name:     name,
+			Type:     "local",
+			Path:     targetPath,
+			Priority: priority,
+			Git: &config.GitConfig{
+				Enabled: true,
+				Remote:  args.URL,
+			},
+		}
+
+		if err := cfg.AddSkillSource(newSource); err != nil {
+			return nil, nil, fmt.Errorf("failed to add skill source to config: %w", err)
+		}
+
+		if err := cfg.Save(); err != nil {
+			return nil, nil, fmt.Errorf("failed to save config: %w", err)
+		}
+
+		// Load skills to count
+		skills, _ := skill.LoadSkillsFromSources([]skill.SkillSource{{
+			Name:     name,
+			Path:     targetPath,
+			Priority: priority,
+		}})
+
+		// Format response
+		responseText := fmt.Sprintf("# Skill Source Added\n\n")
+		responseText += fmt.Sprintf("✓ Cloned **%s** to %s\n", name, targetPath)
+		responseText += fmt.Sprintf("✓ Found **%d skills**\n\n", len(skills))
+
+		responseText += fmt.Sprintf("**Source Details:**\n")
+		responseText += fmt.Sprintf("- Name: %s\n", name)
+		responseText += fmt.Sprintf("- Priority: %d\n", priority)
+		responseText += fmt.Sprintf("- Git: %s\n", args.URL)
+
+		return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, map[string]any{
+				"name":        name,
+				"path":        targetPath,
+				"skill_count": len(skills),
+			}, nil
+	})
+
+	// Register recommend_skills tool
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "recommend_skills",
+		Description: "Get skill recommendations based on project's STRATEGIES.yaml tech stack. " +
+			"Returns skills that match the project's technologies. " +
+			"Use this to suggest skills when deploying agents.",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, args struct {
+		ProjectPath string   `json:"project_path"`
+		AgentName   string   `json:"agent_name"` // Optional: recommend for specific agent
+		TechStack   []string `json:"tech_stack"` // Optional: override with explicit tech stack
+	}) (*mcp.CallToolResult, any, error) {
+		if args.ProjectPath == "" {
+			return nil, nil, fmt.Errorf("project_path is required")
+		}
+
+		// Determine tech stack - from args or STRATEGIES.yaml
+		techStack := args.TechStack
+
+		if len(techStack) == 0 {
+			// Try to load from STRATEGIES.yaml
+			strategiesPath := filepath.Join(args.ProjectPath, "STRATEGIES.yaml")
+			if data, err := os.ReadFile(strategiesPath); err == nil {
+				// Simple extraction of tech_stack from YAML
+				// Look for lines like "  - React 19+"
+				lines := strings.Split(string(data), "\n")
+				inTechStack := false
+				for _, line := range lines {
+					if strings.Contains(line, "tech_stack:") {
+						inTechStack = true
+						continue
+					}
+					if inTechStack {
+						if strings.HasPrefix(strings.TrimSpace(line), "- ") {
+							tech := strings.TrimPrefix(strings.TrimSpace(line), "- ")
+							techStack = append(techStack, tech)
+						} else if !strings.HasPrefix(line, " ") && line != "" {
+							// End of tech_stack section
+							break
+						}
+					}
+				}
+			}
+		}
+
+		if len(techStack) == 0 {
+			responseText := "# Skill Recommendations\n\n"
+			responseText += "No tech stack found. Either:\n"
+			responseText += "- Add a STRATEGIES.yaml file with tech_stack section\n"
+			responseText += "- Provide tech_stack parameter explicitly\n"
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, nil, nil
+		}
+
+		// Load skillsets
+		skillsets, err := loadAllSkillsets()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load skillsets: %w", err)
+		}
+
+		// Find matching skillsets
+		var matchingSkillsets []*skill.Skillset
+		for _, ss := range skillsets {
+			if ss.MatchesTechStack(techStack) {
+				matchingSkillsets = append(matchingSkillsets, ss)
+			}
+		}
+
+		// Format response
+		responseText := "# Skill Recommendations\n\n"
+		responseText += fmt.Sprintf("**Tech Stack Detected:** %s\n\n", strings.Join(techStack, ", "))
+
+		if len(matchingSkillsets) == 0 {
+			responseText += "No matching skills found for this tech stack.\n"
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+			}, matchingSkillsets, nil
+		}
+
+		responseText += fmt.Sprintf("## Recommended Skillsets (%d)\n\n", len(matchingSkillsets))
+
+		for _, ss := range matchingSkillsets {
+			responseText += fmt.Sprintf("### %s", ss.Name)
+			if ss.Version != "" {
+				responseText += fmt.Sprintf(" (v%s)", ss.Version)
+			}
+			responseText += "\n"
+
+			if ss.Description != "" {
+				responseText += fmt.Sprintf("%s\n", ss.Description)
+			}
+
+			if len(ss.Tags) > 0 {
+				responseText += fmt.Sprintf("**Tags:** %s\n", strings.Join(ss.Tags, ", "))
+			}
+
+			responseText += "\n"
+		}
+
+		responseText += "---\n"
+		responseText += "Use `deploy_skills` with skill names to deploy these to your project.\n"
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.TextContent{Text: responseText}},
+		}, matchingSkillsets, nil
+	})
+}
+
+// updateSkillDeploymentManifests updates manifests after skill deployment
+func updateSkillDeploymentManifests(projectPath string, availableSkills []*skill.Skill, results []deploy.SkillDeployResult) error {
+	// Load or create project manifest
+	projectManifest, err := manifest.ReadProjectManifest(projectPath)
+	if err != nil {
+		// Create new manifest if it doesn't exist
+		projectManifest = &manifest.ProjectManifest{
+			Version:      "2",
+			State:        manifest.StateCAMINative,
+			NormalizedAt: time.Now(),
+			Agents:       []manifest.DeployedAgent{},
+			Skills:       []manifest.DeployedSkill{},
+		}
+	}
+
+	// Load config to get source priorities
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Create priority map
+	priorityMap := make(map[string]int)
+	for _, src := range cfg.SkillSources {
+		priorityMap[src.Name] = src.Priority
+	}
+
+	// Add deployed skills to manifest
+	for _, result := range results {
+		if !result.Success {
+			continue
+		}
+
+		// Find the skill in available skills
+		var deployedSkill *skill.Skill
+		for _, s := range availableSkills {
+			if s.Name == result.SkillName {
+				deployedSkill = s
+				break
+			}
+		}
+
+		priority := 50 // default
+		if deployedSkill != nil && deployedSkill.SourceName != "" {
+			if p, ok := priorityMap[deployedSkill.SourceName]; ok {
+				priority = p
+			}
+		}
+
+		entry := deploy.CreateDeployedSkill(result, deployedSkill, priority)
+
+		// Check if skill already exists in manifest and update
+		found := false
+		for i, existing := range projectManifest.Skills {
+			if existing.Name == entry.Name {
+				projectManifest.Skills[i] = entry
+				found = true
+				break
+			}
+		}
+		if !found {
+			projectManifest.Skills = append(projectManifest.Skills, entry)
+		}
+	}
+
+	// Write project manifest
+	if err := manifest.WriteProjectManifest(projectPath, projectManifest); err != nil {
+		return fmt.Errorf("failed to write project manifest: %w", err)
+	}
+
+	// Update central manifest
+	centralManifest, err := manifest.ReadCentralManifest()
+	if err != nil {
+		return fmt.Errorf("failed to read central manifest: %w", err)
+	}
+
+	// Ensure deployments map exists
+	if centralManifest.Deployments == nil {
+		centralManifest.Deployments = make(map[string]manifest.ProjectDeployment)
+	}
+
+	// Get or create project deployment
+	absPath, _ := filepath.Abs(projectPath)
+	deployment := centralManifest.Deployments[absPath]
+	deployment.State = projectManifest.State
+	deployment.NormalizedAt = projectManifest.NormalizedAt
+	deployment.LastScanned = time.Now()
+	deployment.Skills = projectManifest.Skills
+
+	centralManifest.Deployments[absPath] = deployment
+
+	if err := manifest.WriteCentralManifest(centralManifest); err != nil {
+		return fmt.Errorf("failed to write central manifest: %w", err)
+	}
+
+	return nil
 }
 
 // ========== MAIN ENTRY POINT ==========
